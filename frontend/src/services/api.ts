@@ -1,40 +1,7 @@
-const BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL;
+import type { Gate, Zone, Ticket } from "@/types/domain";
+import type { CheckoutResult, LoginResponse } from "@/types/api";
 
-export type Gate = { id: string; name: string };
-export type Zone = {
-  id: string;
-  name: string;
-  category: "normal" | "special";
-  open: boolean;
-  occupied: number;
-  free: number;
-  reserved: number;
-  availableForVisitors: number;
-  availableForSubscribers: number;
-  rateNormal?: number;
-  rateSpecial?: number;
-};
-export type Ticket = {
-  id: string;
-  code: string;
-  type: "visitor" | "subscriber";
-  zoneId: string;
-  gateId: string;
-  createdAt: string;
-};
-export type CheckoutResult = {
-  ticketId: string;
-  durationHours: number;
-  amount: number;
-  breakdown: Array<{
-    mode: "normal" | "special";
-    hours: number;
-    rate: number;
-    total: number;
-  }>;
-  zoneState?: Zone; // updated zone snapshot (optional)
-};
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -54,25 +21,23 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// ---------- raw calls ----------
+// Auth
 export const Auth = {
-  login: (body: { username: string; password: string }) =>
-    api<{ token: string }>("/auth/login", {
+  login: (b: { username: string; password: string }) =>
+    api<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify(body),
-    }),
-  me: (token: string) =>
-    api<{ id: string; username: string; role: string }>("/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(b),
     }),
 };
 
+// Master
 export const Master = {
   gates: () => api<Gate[]>("/master/gates"),
   zonesByGate: (gateId: string) =>
     api<Zone[]>(`/master/zones?gateId=${encodeURIComponent(gateId)}`),
 };
 
+// Tickets
 export const Tickets = {
   checkinVisitor: (p: {
     gateId: string;
@@ -99,14 +64,26 @@ export const Tickets = {
     }),
 };
 
+// Admin
 export const Admin = {
   parkingState: (token: string) =>
     api<Zone[]>("/admin/reports/parking-state", {
       headers: { Authorization: `Bearer ${token}` },
     }),
   toggleZoneOpen: (token: string, zoneId: string, open: boolean) =>
-    api<Zone>(`/admin/zones/${zoneId}/${open ? "open" : "close"}`, {
+    api<Zone>(`/admin/zones/${zoneId}/open`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ open }),
+    }),
+  updateCategory: (
+    token: string,
+    id: string,
+    body: Record<string, unknown>
+  ) =>
+    api(`/admin/categories/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
     }),
 };

@@ -7,7 +7,6 @@ type AppState = {
   gateId?: string;
   wsConnected: boolean;
   ticketForPrint: TicketForPrint;
-
   setToken: (t?: string) => void;
   setGateId: (g?: string) => void;
   setWs: (ok: boolean) => void;
@@ -20,7 +19,6 @@ export const useApp = create<AppState>((set) => ({
   gateId: undefined,
   wsConnected: false,
   ticketForPrint: null,
-
   setToken: (t) => set({ token: t }),
   setGateId: (g) => set({ gateId: g }),
   setWs: (ok) => set({ wsConnected: ok }),

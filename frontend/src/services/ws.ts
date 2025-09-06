@@ -1,57 +1,116 @@
 import { useApp } from "@/store/app";
-
-type Handlers = {
-  zoneUpdate?: (payload: any) => void;
-  adminUpdate?: (payload: any) => void;
-  open?: () => void;
-  close?: () => void;
-  error?: (e: Event) => void;
-};
+import type { ServerMessage, Handlers } from "@/types/ws";
 
 let socket: WebSocket | null = null;
 let subscribedGateId: string | null = null;
+let reconnectAttempts = 0;
+let heartbeatTimer: number | null = null;
 
-const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/api/v1/ws";
+function backoff(base = 500, attempt = 0, max = 8000) {
+  return Math.min(base * 2 ** attempt, max);
+}
 
-export function connectWS(handlers: Handlers = {}) {
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = window.setInterval(() => {
+    try {
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "ping" }));
+      }
+    } catch {
+      // ignore
+    }
+  }, 15000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
+function isMsg(v: unknown): v is ServerMessage {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "type" in (v as Record<string, unknown>)
+  );
+}
+
+export function connectWS(handlers: Handlers = {}, token?: string) {
   if (typeof window === "undefined") return null;
   if (socket && socket.readyState === WebSocket.OPEN) return socket;
 
-  socket = new WebSocket(WS_URL);
+  const base = process.env.NEXT_PUBLIC_WS_URL;
+  if (!base) {
+    const msg = "Missing WS URL";
+    console.error(msg);
+    try {
+      useApp.getState().setWs(false);
+    } catch {
+      // ignore
+    }
+    handlers.error?.(new Event("ws-url-missing"));
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line no-alert
+      alert(msg);
+    }
+    return null;
+  }
+
+  const url = token
+    ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(
+        token
+      )}`
+    : base;
+
+  const sock = new WebSocket(url);
+  socket = sock;
   const setWs = useApp.getState().setWs;
 
-  socket.addEventListener("open", () => {
+  sock.addEventListener("open", () => {
     setWs(true);
+    reconnectAttempts = 0;
+    startHeartbeat();
     handlers.open?.();
-    // لو فيه اشتراك قديم
-    if (subscribedGateId) {
-      subscribeGate(subscribedGateId);
-    }
+    if (subscribedGateId) subscribeGate(subscribedGateId);
   });
 
-  socket.addEventListener("close", () => {
+  sock.addEventListener("close", () => {
     setWs(false);
+    stopHeartbeat();
     handlers.close?.();
+    const delay = backoff(500, reconnectAttempts++);
+    window.setTimeout(() => connectWS(handlers, token), delay);
   });
 
-  socket.addEventListener("error", (e) => {
+  sock.addEventListener("error", (e) => {
     setWs(false);
     handlers.error?.(e);
-  });
-
-  socket.addEventListener("message", (ev) => {
     try {
-      const msg = JSON.parse(ev.data);
-      if (msg?.type === "zone-update") handlers.zoneUpdate?.(msg.payload);
-      if (msg?.type === "admin-update")
-        handlers.adminUpdate?.(msg.payload);
+      socket?.close();
     } catch {
-      // ignore parse errors
+      // ignore
     }
   });
 
-  return socket;
+  sock.addEventListener("message", (ev: MessageEvent) => {
+    if (typeof ev.data !== "string") return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(ev.data);
+    } catch {
+      return;
+    }
+    if (!isMsg(parsed)) return;
+    if (parsed.type === "zone-update")
+      handlers.zoneUpdate?.(parsed.payload);
+    if (parsed.type === "admin-update")
+      handlers.adminUpdate?.(parsed.payload);
+  });
+
+  return sock;
 }
 
 export function subscribeGate(gateId: string) {
@@ -62,8 +121,10 @@ export function subscribeGate(gateId: string) {
 
 export function disconnectWS() {
   subscribedGateId = null;
-  if (socket) {
-    socket.close();
+  stopHeartbeat();
+  try {
+    socket?.close();
+  } finally {
     socket = null;
   }
 }
