@@ -1,6 +1,6 @@
 // Tailwind background classes for zone name pill
 export const CATEGORY_COLORS = {
-  cat_premium: "bg-amber-700",
+  cat_premium: "bg-[#daa520]",
   cat_regular: "bg-gray-900",
   cat_economy: "bg-emerald-700",
   cat_vip: "bg-violet-700",

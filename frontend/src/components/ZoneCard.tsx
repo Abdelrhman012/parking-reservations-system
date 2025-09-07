@@ -22,11 +22,11 @@ export default function ZoneCard({
     const price = isRush && zone.rateSpecial ? zone.rateSpecial : zone.rateNormal;
 
     const pillBg =
-        CATEGORY_COLORS[(zone.categoryId as CategoryId)] ?? "bg-gray-900";; 
+        CATEGORY_COLORS[(zone.categoryId as CategoryId)] ?? "bg-gray-900";;
     const unavailable = disabled || !isOpen || zone.availableForVisitors <= 0;
 
     return (
-        <div className="rounded-[18px]">
+        <div className={`rounded-[18px] ${unavailable ? "opacity-50" : ""}`}>
             <div className="rounded-[18px] bg-white p-4 shadow-sm">
                 {/* top bar */}
                 <div className="mb-4 flex items-center justify-between">
@@ -44,7 +44,7 @@ export default function ZoneCard({
                 </div>
 
                 {/* main row */}
-                <div className="mb-5 flex items-start justify-between">
+                <div className="mb-5 flex items-end justify-between">
                     <div>
                         <div className="text-xs font-semibold tracking-wide text-gray-500">AVAILABLE</div>
                         <div className="flex items-end gap-1">
@@ -82,7 +82,7 @@ export default function ZoneCard({
 
                 {/* action */}
                 <button
-                    className={`w-full rounded-full px-5 py-3 text-sm font-semibold tracking-wide ${unavailable ? "cursor-not-allowed bg-gray-300 text-gray-500" : "bg-gray-900 text-white hover:bg-gray-800"
+                    className={`w-full  rounded-full px-5 py-3 text-sm font-semibold tracking-wide ${unavailable ? "cursor-not-allowed bg-gray-300 text-gray-500" : "cursor-pointer bg-gray-900 text-white hover:bg-gray-800"
                         }`}
                     disabled={unavailable}
                     onClick={() => onCheckin?.(zone.id)}
