@@ -10,6 +10,7 @@ import { connectWS, subscribeGate, disconnectWS } from "@/services/ws";
 import type { Zone } from "@/types/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApp } from "@/store/app";
+import ZoneCardSkeleton from "@/components/ZoneCardSkeleton";
 
 export default function GatePage() {
     const { gateId } = useParams<{ gateId: string }>();
@@ -70,7 +71,14 @@ export default function GatePage() {
                     </div>
 
                     {isLoading ? (
-                        <div className="py-10 text-center text-gray-500">Loading zones…</div>
+                        <div
+                            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                            aria-busy="true"
+                        >
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <ZoneCardSkeleton key={i} />
+                            ))}
+                        </div>
                     ) : error ? (
                         <div className="py-10 text-center text-red-600">Failed to load zones</div>
                     ) : zones && zones.length ? (
