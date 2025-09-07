@@ -1,3 +1,4 @@
+// src/services/ws.ts
 import { useApp } from "@/store/app";
 import type { ServerMessage, Handlers } from "@/types/ws";
 
@@ -5,6 +6,7 @@ let socket: WebSocket | null = null;
 let subscribedGateId: string | null = null;
 let reconnectAttempts = 0;
 let heartbeatTimer: number | null = null;
+let intentionalClose = false;
 
 function backoff(base = 500, attempt = 0, max = 8000) {
   return Math.min(base * 2 ** attempt, max);
@@ -38,27 +40,49 @@ function isMsg(v: unknown): v is ServerMessage {
   );
 }
 
+function normalizeWsUrl(raw: string): string {
+  try {
+    const httpsPage =
+      typeof window !== "undefined" &&
+      window.location.protocol === "https:";
+    const hasScheme = /^wss?:\/\//i.test(raw);
+    const base =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost";
+    const url = new URL(raw, hasScheme ? undefined : base);
+    // Force protocol to match page security to avoid mixed-content
+    url.protocol = httpsPage ? "wss:" : "ws:";
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 export function connectWS(handlers: Handlers = {}, token?: string) {
   if (typeof window === "undefined") return null;
-  if (socket && socket.readyState === WebSocket.OPEN) return socket;
 
-  const base = process.env.NEXT_PUBLIC_WS_URL;
-  if (!base) {
-    const msg = "Missing WS URL";
+  // Reuse existing socket if OPEN or CONNECTING
+  if (
+    socket &&
+    (socket.readyState === WebSocket.OPEN ||
+      socket.readyState === WebSocket.CONNECTING)
+  ) {
+    return socket;
+  }
+
+  const raw = process.env.NEXT_PUBLIC_WS_URL;
+  if (!raw) {
+    const msg = "Missing NEXT_PUBLIC_WS_URL";
     console.error(msg);
     try {
       useApp.getState().setWs(false);
-    } catch {
-      // ignore
-    }
+    } catch {}
     handlers.error?.(new Event("ws-url-missing"));
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-alert
-      alert(msg);
-    }
     return null;
   }
 
+  const base = normalizeWsUrl(raw);
   const url = token
     ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(
         token
@@ -67,6 +91,8 @@ export function connectWS(handlers: Handlers = {}, token?: string) {
 
   const sock = new WebSocket(url);
   socket = sock;
+  intentionalClose = false;
+
   const setWs = useApp.getState().setWs;
 
   sock.addEventListener("open", () => {
@@ -81,13 +107,17 @@ export function connectWS(handlers: Handlers = {}, token?: string) {
     setWs(false);
     stopHeartbeat();
     handlers.close?.();
-    const delay = backoff(500, reconnectAttempts++);
-    window.setTimeout(() => connectWS(handlers, token), delay);
+    if (!intentionalClose) {
+      const delay = backoff(500, reconnectAttempts++);
+      window.setTimeout(() => connectWS(handlers, token), delay);
+    } else {
+      intentionalClose = false; // reset flag after an intentional close
+    }
   });
 
   sock.addEventListener("error", (e) => {
     setWs(false);
-    handlers.error?.(e);
+    handlers.error?.(e as Event);
     try {
       socket?.close();
     } catch {
@@ -95,7 +125,7 @@ export function connectWS(handlers: Handlers = {}, token?: string) {
     }
   });
 
-  sock.addEventListener("message", (ev: MessageEvent) => {
+  sock.addEventListener("message", (ev: MessageEvent<string>) => {
     if (typeof ev.data !== "string") return;
     let parsed: unknown;
     try {
@@ -108,6 +138,7 @@ export function connectWS(handlers: Handlers = {}, token?: string) {
       handlers.zoneUpdate?.(parsed.payload);
     if (parsed.type === "admin-update")
       handlers.adminUpdate?.(parsed.payload);
+    // "pong" and "subscribed" messages are safe to ignore here
   });
 
   return sock;
@@ -122,6 +153,7 @@ export function subscribeGate(gateId: string) {
 export function disconnectWS() {
   subscribedGateId = null;
   stopHeartbeat();
+  intentionalClose = true;
   try {
     socket?.close();
   } finally {

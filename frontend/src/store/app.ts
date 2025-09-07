@@ -1,27 +1,28 @@
-import { create } from 'zustand';
-
-type TicketForPrint = { id: string; code: string } | null;
+import { create } from "zustand";
+import type { User, TicketCheckinResponse } from "@/types/api";
 
 type AppState = {
   token?: string;
-  gateId?: string;
+  user?: User;
   wsConnected: boolean;
-  ticketForPrint: TicketForPrint;
-  setToken: (t?: string) => void;
-  setGateId: (g?: string) => void;
-  setWs: (ok: boolean) => void;
-  setTicket: (t: TicketForPrint) => void;
+  setWs: (v: boolean) => void;
+
+  ticketModal?: TicketCheckinResponse | null;
+  setTicketModal: (v: TicketCheckinResponse | null) => void;
+
+  setAuth: (payload: { token?: string; user?: User } | null) => void;
   logout: () => void;
 };
 
 export const useApp = create<AppState>((set) => ({
   token: undefined,
-  gateId: undefined,
+  user: undefined,
   wsConnected: false,
-  ticketForPrint: null,
-  setToken: (t) => set({ token: t }),
-  setGateId: (g) => set({ gateId: g }),
-  setWs: (ok) => set({ wsConnected: ok }),
-  setTicket: (t) => set({ ticketForPrint: t }),
-  logout: () => set({ token: undefined, gateId: undefined }),
+  setWs: (v) => set({ wsConnected: v }),
+
+  ticketModal: null,
+  setTicketModal: (v) => set({ ticketModal: v }),
+
+  setAuth: (p) => set({ token: p?.token, user: p?.user }),
+  logout: () => set({ token: undefined, user: undefined }),
 }));

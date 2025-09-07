@@ -47,7 +47,6 @@ export type Zone = {
 export type AdminParkingStateZone = Zone & {
   subscriberCount?: number;
 };
-
 // ---------- Global rules ----------
 export type RushHour = {
   id: string;
@@ -77,12 +76,12 @@ export type Subscription = {
   active: boolean;
   category: string; // categoryId
   cars: SubscriptionCar[];
-  startsAt: string; // ISO
-  expiresAt: string; // ISO
+  startsAt: string;
+  expiresAt: string;
   currentCheckins: Array<{
     ticketId: string;
     zoneId: string;
-    checkinAt: string; // ISO
+    checkinAt: string;
   }>;
 };
 
@@ -92,8 +91,8 @@ export type Ticket = {
   type: "visitor" | "subscriber";
   zoneId: string;
   gateId: string;
-  checkinAt: string; // ISO
-  checkoutAt: string | null; // ISO or null when still checked-in
+  checkinAt: string;
+  checkoutAt: string | null; 
 };
 
 export type TicketCheckinResponse = {
@@ -102,8 +101,8 @@ export type TicketCheckinResponse = {
 };
 
 export type TicketCheckoutBreakdownItem = {
-  from: string; // ISO
-  to: string; // ISO
+  from: string;
+  to: string;
   hours: number;
   rateMode: "normal" | "special";
   rate: number;
@@ -112,8 +111,8 @@ export type TicketCheckoutBreakdownItem = {
 
 export type TicketCheckoutResponse = {
   ticketId: string;
-  checkinAt: string; // ISO
-  checkoutAt: string; // ISO
+  checkinAt: string;
+  checkoutAt: string;
   durationHours: number;
   breakdown: TicketCheckoutBreakdownItem[];
   amount: number;
