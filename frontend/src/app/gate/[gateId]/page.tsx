@@ -11,6 +11,8 @@ import type { Zone } from "@/types/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApp } from "@/store/app";
 import ZoneCardSkeleton from "@/components/ZoneCardSkeleton";
+import Tabs from "@/components/Tabs";
+import SubscriberPanel from "@/components/SubscriberPanel";
 
 export default function GatePage() {
     const { gateId } = useParams<{ gateId: string }>();
@@ -19,10 +21,10 @@ export default function GatePage() {
     const qc = useQueryClient();
     const setWs = useApp((s) => s.setWs);
     const setTicketModal = useApp((s) => s.setTicketModal);
-
+    const activeGateTab = useApp((s) => s.activeGateTab);
+    const setActiveGateTab = useApp((s) => s.setActiveGateTab);
     useEffect(() => {
         if (!gateId) return;
-
         connectWS(
             {
                 open: () => setWs(true),
@@ -36,15 +38,14 @@ export default function GatePage() {
             },
             undefined
         );
-
         subscribeGate(gateId);
         return () => disconnectWS();
     }, [gateId, qc, setWs]);
 
-    const checkin = useCheckinVisitor();
-    const onCheckin = (zoneId: string) => {
+    const checkinVisitor = useCheckinVisitor();
+    const onVisitorCheckin = (zoneId: string) => {
         if (!gateId) return;
-        checkin.mutate(
+        checkinVisitor.mutate(
             { gateId, zoneId },
             {
                 onSuccess: (res) => {
@@ -61,39 +62,53 @@ export default function GatePage() {
         <div className="min-h-screen bg-gray-100">
             <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
                 <GateHeader gateId={gateId || "—"} />
-
                 <section className="rounded-xl border bg-white p-4 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-900">Visitor Check-in</h2>
-                        {checkin.isPending ? (
+                    <div className="mb-4 flex items-center justify-center">
+                        <Tabs active={activeGateTab} onChange={setActiveGateTab} />
+
+                        {checkinVisitor.isPending ? (
                             <span className="text-sm text-gray-500">Processing…</span>
                         ) : null}
                     </div>
 
                     {isLoading ? (
-                        <div
-                            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                            aria-busy="true"
-                        >
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <ZoneCardSkeleton key={i} />
                             ))}
                         </div>
                     ) : error ? (
                         <div className="py-10 text-center text-red-600">Failed to load zones</div>
-                    ) : zones && zones.length ? (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {zones.map((z) => (
-                                <ZoneCard
-                                    key={z.id}
-                                    zone={z}
-                                    onCheckin={onCheckin}
-                                    disabled={!z.open || z.availableForVisitors <= 0}
-                                />
-                            ))}
-                        </div>
-                    ) : (
+                    ) : !zones || !zones.length ? (
                         <div className="py-10 text-center text-gray-500">No zones available.</div>
+                    ) : activeGateTab === "visitor" ? (
+                        <>
+                            {checkinVisitor.isPending && (
+                                <div className="mb-3 text-sm text-gray-500">Processing…</div>
+                            )}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {zones.map((z) => (
+                                    <ZoneCard
+                                        key={z.id}
+                                        zone={z}
+                                        mode="visitor"
+                                        onCheckin={onVisitorCheckin}
+                                        disabled={!z.open || z.availableForVisitors <= 0}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <SubscriberPanel
+                            gateId={gateId}
+                            zones={zones}
+                            onZoneStateUpdate={(newZone) => {
+                                qc.setQueryData<Zone[]>(["zones", gateId], (prev) =>
+                                    prev?.map((z) => (z.id === newZone.id ? newZone : z)) ?? prev
+                                );
+                            }}
+                            onTicket={(res) => setTicketModal(res)}
+                        />
                     )}
                 </section>
             </div>

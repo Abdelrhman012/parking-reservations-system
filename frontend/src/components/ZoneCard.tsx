@@ -6,14 +6,17 @@ type Zone = ApiZone & { specialActive?: boolean };
 
 type Props = {
     zone: Zone;
-    onCheckin?: (zoneId: string) => void;
     disabled?: boolean;
+    onCheckin?: (zoneId: string) => void;
+    mode?: "visitor" | "subscriber";
 };
+
 
 export default function ZoneCard({
     zone,
     onCheckin,
     disabled,
+    mode
 }: Props) {
     const isOpen = zone.open;
     const isRush = zone.specialActive === true;
