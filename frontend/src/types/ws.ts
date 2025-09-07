@@ -1,19 +1,33 @@
-import type { Zone } from "./domain";
+import { Zone } from "./api";
 
-export type ZoneUpdatePayload = Zone & { gateId: string };
-
-export type AdminUpdatePayload = {
-  action: string;
-  zoneId?: string;
-  gateId?: string;
-  at: string;
-  actor?: { id?: string; username?: string; role?: string };
-  meta?: Record<string, unknown>;
+// src/types/ws.ts
+export type WSSubscribe = {
+  type: "subscribe";
+  payload: { gateId: string };
 };
 
+export type WSUnsubscribe = {
+  type: "unsubscribe";
+  payload: { gateId: string };
+};
+
+export type WSZoneUpdate = {
+  type: "zone-update";
+  payload: Zone;
+};
+
+export type WSAdminUpdate = {
+  type: "admin-update";
+  payload?: Record<string, unknown>;
+};
+
+export type ClientMessage = WSSubscribe | WSUnsubscribe;
+
+export type ZoneUpdatePayload = WSZoneUpdate["payload"];
+export type AdminUpdatePayload = WSAdminUpdate["payload"];
+
 export type ServerMessage =
-  | { type: "zone-update"; payload: ZoneUpdatePayload }
-  | { type: "admin-update"; payload: AdminUpdatePayload }
+  | (WSZoneUpdate | WSAdminUpdate)
   | { type: "subscribed"; payload: { gateId: string } }
   | { type: "pong" };
 
