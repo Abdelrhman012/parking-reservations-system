@@ -8,13 +8,12 @@ export default function TicketModal() {
     const modal = useApp((s) => s.ticketModal);
     const setModal = useApp((s) => s.setTicketModal);
 
-    // always declare hooks BEFORE any early return
     const ticket = modal?.ticket;
     const zoneState = modal?.zoneState;
 
     const handleDownloadPdf = useCallback(async () => {
         if (!modal) return;
-        const { ticket, zoneState } = modal;
+        const { ticket } = modal;
 
         const { jsPDF } = await import("jspdf");
 
