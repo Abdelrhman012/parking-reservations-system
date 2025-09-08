@@ -9,8 +9,8 @@ export default function TicketModal() {
     const setModal = useApp((s) => s.setTicketModal);
 
     const ticket = modal?.ticket;
+    const subscriptionId = modal?.subscriptionId;
     const zoneState = modal?.zoneState;
-
     const handleDownloadPdf = useCallback(async () => {
         if (!modal) return;
         const { ticket } = modal;
@@ -89,10 +89,14 @@ export default function TicketModal() {
     const qrPayload = {
         "Ticket Id": ticket!.id,
         "User Type": ticket!.type,
+        ...(ticket!.type === "subscriber" && subscriptionId
+            ? { "Subscription Id": subscriptionId }
+            : {}),
         Gate: ticket!.gateId,
         Zone: ticket!.zoneId,
         "Check In At": formatInCairo(ticket!.checkinAt),
     };
+
     const qrValue = JSON.stringify(qrPayload);
 
     return (
@@ -119,6 +123,7 @@ export default function TicketModal() {
                 <div className="space-y-2 text-sm">
                     <Row k="Ticket ID" v={ticket?.id || ""} />
                     <Row k="Type" v={ticket?.type || ""} />
+                    {ticket?.type === "subscriber" && <Row k="Subscriber Id" v={subscriptionId || ""} />}
                     <Row k="Gate" v={ticket?.gateId || ""} />
                     <Row k="Zone" v={ticket?.zoneId || ""} />
                     <Row k="Check-in" v={formatInCairo(ticket?.checkinAt || "")} />

@@ -98,6 +98,7 @@ export type Ticket = {
 export type TicketCheckinResponse = {
   ticket: Pick<Ticket, "id" | "type" | "zoneId" | "gateId" | "checkinAt">;
   zoneState: Zone;
+  subscriptionId?: string;
 };
 
 export type TicketCheckoutBreakdownItem = {

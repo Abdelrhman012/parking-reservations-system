@@ -7,7 +7,7 @@ import TicketModal from "@/components/TicketModal";
 import { useZones } from "@/services/queries/master";
 import { useCheckinVisitor } from "@/services/queries/tickets";
 import { connectWS, subscribeGate, disconnectWS } from "@/services/ws";
-import type { Zone } from "@/types/api";
+import type { TicketCheckinResponse, Zone } from "@/types/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApp } from "@/store/app";
 import ZoneCardSkeleton from "@/components/ZoneCardSkeleton";
@@ -113,7 +113,7 @@ export default function GatePage() {
                                     prev?.map((z) => (z.id === newZone.id ? newZone : z)) ?? prev
                                 );
                             }}
-                            onTicket={(res) => setTicketModal(res)}
+                            onTicket={(res: TicketCheckinResponse, subId: string = "") => setTicketModal({ ...res, subscriptionId: subId })}
                         />
                     )}
                 </section>

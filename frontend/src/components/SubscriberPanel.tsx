@@ -20,7 +20,7 @@ export default function SubscriberPanel({
     gateId: string;
     zones: Zone[];
     onZoneStateUpdate: (z: Zone) => void;
-    onTicket: (res: TicketCheckinResponse) => void;
+    onTicket: (res: TicketCheckinResponse, subId?: string) => void;
 }) {
     const [subId, setSubId] = useState<string>("");
     const [verifiedId, setVerifiedId] = useState<string>("");
@@ -87,7 +87,7 @@ export default function SubscriberPanel({
             }
             shownVerificationRef.current = key;
         }
-    }, [verifiedId, isFetching, isError, sub?.id, sub?.active]);
+    }, [verifiedId, isFetching, isError, sub?.id, sub?.active, sub]);
 
     useEffect(() => {
         if (!verifiedId || isFetching || isError || !sub?.active) return;
@@ -108,7 +108,7 @@ export default function SubscriberPanel({
             {
                 onSuccess: (res) => {
                     onZoneStateUpdate(res.zoneState);
-                    onTicket(res);
+                    onTicket(res, sub.id);
                     toast("Checked-in successfully.", "success");
 
                 },
