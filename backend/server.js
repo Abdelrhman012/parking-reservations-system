@@ -31,7 +31,7 @@ function ceil(n) { return Math.ceil(n); }
 function loginUser(username, password) {
   const user = db.users.find(u => u.username === username && u.password === password);
   if (!user) return null;
-  return { id: user.id, username: user.username, role: user.role, token: 'token-' + user.id };
+  return { id: user.id,name:user.name, username: user.username, role: user.role, token: 'token-' + user.id };
 }
 
 function getUserByToken(token) {
@@ -182,7 +182,7 @@ app.post(BASE + '/auth/login', (req, res) => {
   const { username, password } = req.body || {};
   const u = loginUser(username, password);
   if (!u) return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
-  res.json({ user: { id: u.id, username: u.username, role: u.role }, token: 'token-' + u.id });
+  res.json({ user: { id: u.id, username: u.username, role: u.role, name:u.name }, token: 'token-' + u.id });
 });
 
 // Public master endpoints
