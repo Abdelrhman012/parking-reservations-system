@@ -67,6 +67,9 @@ export default function TicketModal() {
         const lines: Array<[string, string]> = [
             ["Ticket Id", ticket.id],
             ["User Type", ticket.type],
+            ...(ticket.type === "subscriber" && subscriptionId
+                ? [["Subscription Id", subscriptionId]] as [string, string][]
+                : []),
             ["Gate", ticket.gateId],
             ["Zone", ticket.zoneId],
             ["Check In At", formatInCairo(ticket.checkinAt)],

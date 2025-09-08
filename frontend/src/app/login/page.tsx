@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Auth } from "@/services/api";
 import { setSession } from "@/lib/auth";
 import { toast } from "@/lib/toast";
+import Button from "@/components/Button";
 
 function getErrorMessage(err: unknown): string {
     if (err instanceof Error && err.message) return err.message;
@@ -56,12 +57,12 @@ export default function LoginPage() {
                         onChange={(e) => setP(e.currentTarget.value)}
                         autoComplete="current-password"
                     />
-                    <button
-                        className={`w-[50%] mx-auto rounded-full bg-gray-900 py-2 text-sm font-semibold text-white disabled:opacity-50 ${(loading || !username || !password) ? "cursor-not-allowed" : "cursor-pointer"}`}
+                    <Button
                         disabled={loading || !username || !password}
+                        type="submit"
                     >
                         {loading ? "Signing in…" : "Login"}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </main>
