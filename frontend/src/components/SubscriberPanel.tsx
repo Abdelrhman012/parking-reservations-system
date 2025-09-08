@@ -56,24 +56,51 @@ export default function SubscriberPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [subId]);
 
-    // show verification result in a toast
+    const shownVerificationRef = useRef<string | null>(null);
+    const categoryWarnRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        shownVerificationRef.current = null;
+        categoryWarnRef.current = null;
+    }, [verifiedId]);
+
     useEffect(() => {
         if (!verifiedId || isFetching) return;
 
         if (isError) {
-            toast("Subscription not found.", "error");
+            const key = `err:${verifiedId}`;
+            if (shownVerificationRef.current !== key) {
+                toast("Subscription not found.", "error");
+                shownVerificationRef.current = key;
+            }
             return;
         }
-        if (sub) {
-            if (sub.active) {
-                toast(`Subscription ${sub.id} is Active.`, "success")
-                if (!(zones.some(z => z.categoryId === sub.category)) && sub.active) {
-                    toast("Subscriber category not allowed in this gate.", "error");
-                }
-            } else toast(`Subscription ${sub.id} is Inactive.`, "info");
-        }
-    }, [verifiedId, isFetching, isError, sub, zones]);
 
+        if (sub) {
+            const key = `${sub.id}:${sub.active ? "1" : "0"}`;
+            if (shownVerificationRef.current === key) return; // already shown
+
+            if (sub.active) {
+                toast(`Subscription ${sub.id} is Active.`, "success");
+            } else {
+                toast(`Subscription ${sub.id} is Inactive.`, "info");
+            }
+            shownVerificationRef.current = key;
+        }
+    }, [verifiedId, isFetching, isError, sub?.id, sub?.active]);
+
+    useEffect(() => {
+        if (!verifiedId || isFetching || isError || !sub?.active) return;
+
+        const allowed = zones.some((z) => z.categoryId === sub.category);
+        if (!allowed) {
+            const key = `warn:${sub.id}`;
+            if (categoryWarnRef.current !== key) {
+                toast("Subscriber category not allowed in this gate.", "error");
+                categoryWarnRef.current = key;
+            }
+        }
+    }, [verifiedId, isFetching, isError, sub?.id, sub?.category, sub?.active, zones]);
     const onCheckin = (zoneId: string) => {
         if (!gateId || !sub?.id) return;
         checkin.mutate(
@@ -98,7 +125,7 @@ export default function SubscriberPanel({
             <div className="flex items-end gap-3">
                 <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-800 mb-2 ml-4">
-                        Subscription ID
+                        Enter Subscription ID
                     </label>
                     <input
                         value={subId}
