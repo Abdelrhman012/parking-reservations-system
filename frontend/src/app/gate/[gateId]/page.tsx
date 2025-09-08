@@ -13,6 +13,7 @@ import { useApp } from "@/store/app";
 import ZoneCardSkeleton from "@/components/ZoneCardSkeleton";
 import Tabs from "@/components/Tabs";
 import SubscriberPanel from "@/components/SubscriberPanel";
+import { toast } from "@/lib/toast";
 
 export default function GatePage() {
     const { gateId } = useParams<{ gateId: string }>();
@@ -53,6 +54,11 @@ export default function GatePage() {
                         prev?.map((z) => (z.id === res.zoneState.id ? res.zoneState : z)) ?? prev
                     );
                     setTicketModal(res);
+                    toast("Checked-in successfully.", "success");
+                },
+                onError: (err) => {
+                    const msg = err instanceof Error ? err.message : "Something went wrong.";
+                    toast(msg, "error");
                 },
             }
         );

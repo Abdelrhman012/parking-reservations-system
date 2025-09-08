@@ -109,7 +109,7 @@ export default function SubscriberPanel({
                 onSuccess: (res) => {
                     onZoneStateUpdate(res.zoneState);
                     onTicket(res);
-                    toast("Subscriber checked-in successfully.", "success");
+                    toast("Checked-in successfully.", "success");
 
                 },
                 onError: (err) => {
