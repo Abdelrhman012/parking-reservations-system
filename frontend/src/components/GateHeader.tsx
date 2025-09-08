@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/store/app";
 import { formatGateLabel } from "@/utils/format";
+import { useGates } from "@/services/queries";
 
-export default function GateHeader({ gateId }: { gateId: string }) {
+export default function GateHeader({ gateId }: { gateId: string}) {
     const wsConnected = useApp((s) => s.wsConnected);
     const [now, setNow] = useState<string>("");
+
+    const { data: gates } = useGates();
+    const gate = gates?.find((g) => g.id === gateId);
+    const gateLocation = gate?.location ?? "—";
 
     useEffect(() => {
         const t = setInterval(() => setNow(new Date().toLocaleTimeString()), 1000);
@@ -38,11 +43,12 @@ export default function GateHeader({ gateId }: { gateId: string }) {
 
                 <div>
                     <div className="text-lg font-semibold text-gray-900">{formatGateLabel(gateId)}</div>
+                    <div className="text-sm  text-gray-400 text-center">{gateLocation}</div>
                 </div>
             </div>
             <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600">{now}</span>
-        
+
 
             </div>
         </header>

@@ -15,7 +15,10 @@ import type {
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // ---------- Fetch wrapper ----------
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function api<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
@@ -24,15 +27,25 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     },
     cache: "no-store",
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `API ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`
-    );
-  }
-  return res.json() as Promise<T>;
-}
 
+  if (!res.ok) {
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (body && typeof body.message === "string") message = body.message;
+    } catch {
+      // ignore; keep default message
+    }
+    throw new Error(message);
+  }
+
+  if (res.status === 204) return undefined as unknown as T;
+
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json")
+    ? ((await res.json()) as T)
+    : ((await res.text()) as unknown as T);
+}
 // ==================================
 // Auth & Users (employees/admins)
 // ==================================

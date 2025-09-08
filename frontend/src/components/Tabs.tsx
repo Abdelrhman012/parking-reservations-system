@@ -14,16 +14,16 @@ export default function Tabs({
     onChange: (k: "visitor" | "subscriber") => void;
 }) {
     return (
-        <div className="inline-flex rounded-lg border bg-white p-1 shadow-sm">
+        <div className="inline-flex rounded-full border bg-white p-1 shadow-sm">
             {TABS.map((t) => {
                 const isActive = t.key === active;
                 return (
                     <button
                         key={t.key}
                         type="button"
-                        className={`rounded-md px-4 py-2 text-sm font-medium transition ${isActive
+                        className={`rounded-full min-w-[6rem] px-4 py-2 text-sm font-medium transition ${isActive
                             ? "bg-gray-900 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
+                            : "text-gray-700 hover:bg-gray-100 cursor-pointer"
                             }`}
                         onClick={() => onChange(t.key)}
                     >

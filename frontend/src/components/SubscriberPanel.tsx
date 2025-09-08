@@ -6,6 +6,7 @@ import ZoneCard from "@/components/ZoneCard";
 import Spinner from "@/components/Spinner";
 import { toast } from "@/lib/toast";
 import type { Zone, TicketCheckinResponse } from "@/types/api";
+import { StatusIcon } from "./StatusIcon";
 
 const MIN_LEN = 7;
 const DEBOUNCE_MS = 300;
@@ -64,10 +65,14 @@ export default function SubscriberPanel({
             return;
         }
         if (sub) {
-            if (sub.active) toast(`Subscription ${sub.id} is Active.`, "success");
-            else toast(`Subscription ${sub.id} is Inactive.`, "info");
+            if (sub.active) {
+                toast(`Subscription ${sub.id} is Active.`, "success")
+                if (!(zones.some(z => z.categoryId === sub.category)) && sub.active) {
+                    toast("Subscriber category not allowed in this gate.", "error");
+                }
+            } else toast(`Subscription ${sub.id} is Inactive.`, "info");
         }
-    }, [verifiedId, isFetching, isError, sub]);
+    }, [verifiedId, isFetching, isError, sub, zones]);
 
     const onCheckin = (zoneId: string) => {
         if (!gateId || !sub?.id) return;
@@ -78,8 +83,12 @@ export default function SubscriberPanel({
                     onZoneStateUpdate(res.zoneState);
                     onTicket(res);
                     toast("Subscriber checked-in successfully.", "success");
+
                 },
-                onError: (res) => toast(res.message, "error"),
+                onError: (err) => {
+                    const msg = err instanceof Error ? err.message : "Something went wrong.";
+                    toast(msg, "error");
+                },
             }
         );
     };
@@ -88,7 +97,7 @@ export default function SubscriberPanel({
         <div className="space-y-4">
             <div className="flex items-end gap-3">
                 <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="block text-xs font-medium text-gray-800 mb-2 ml-4">
                         Subscription ID
                     </label>
                     <input
@@ -96,19 +105,30 @@ export default function SubscriberPanel({
                         onChange={(e) => setSubId(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && verify()}
                         placeholder="e.g., sub_001"
-                        className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500"
                     />
                 </div>
 
                 {/* button -> spinner while verifying */}
-                {isFetching ? (
+                {verifiedId ? (
+                    isFetching ? (
+                        <div className="flex h-9 w-24 items-center justify-center rounded-lg border bg-white">
+                            <Spinner size={16} />
+                        </div>
+                    ) : (
+                        <StatusIcon
+                            active={!!sub?.active && !isError}
+                            isError={!!isError}
+                        />
+                    )
+                ) : isFetching ? (
                     <div className="flex h-9 w-24 items-center justify-center rounded-lg border bg-white">
                         <Spinner size={16} />
                     </div>
                 ) : (
                     <button
                         type="button"
-                        className="h-9 w-24 rounded-lg bg-gray-900 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                        className="h-9 w-24 rounded-full bg-gray-900 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                         disabled={!subId.trim()}
                         onClick={verify}
                     >
@@ -117,14 +137,14 @@ export default function SubscriberPanel({
                 )}
             </div>
 
-           
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {zones.map((z) => (
                     <ZoneCard
                         key={z.id}
                         zone={z}
                         mode="subscriber"
-                        disabled={!z.open || z.availableForSubscribers <= 0 || !sub?.active}
+                        disabled={!z.open || z.availableForSubscribers <= 0 || !sub?.active || z.categoryId !== sub?.category}
                         onCheckin={onCheckin}
                     />
                 ))}

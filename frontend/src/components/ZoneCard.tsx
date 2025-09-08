@@ -21,7 +21,7 @@ export default function ZoneCard({
     const isOpen = zone.open;
     const isRush = zone.specialActive === true;
     const total = zone.totalSlots;
-    const available = zone.availableForVisitors;
+    const available = mode === "subscriber" ? zone.availableForSubscribers : zone.availableForVisitors;
     const price = isRush && zone.rateSpecial ? zone.rateSpecial : zone.rateNormal;
 
     const pillBg =
