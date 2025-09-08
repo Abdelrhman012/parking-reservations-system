@@ -96,20 +96,7 @@ export default function SubscriberSection({
                 {action}
             </div>
 
-            {sub ? (
-                <div>
-                    <div className="mb-2 text-sm font-semibold">Subscription cars</div>
-                    <ul className="grid grid-cols-2 gap-2 text-sm">
-                        {sub.cars.map((c, i) => (
-                            <li key={i} className="rounded-md bg-white px-2 py-1 shadow-sm">
-                                {c.plate}
-                                {c.color ? ` • ${c.color}` : ""}
-                                {c.brand ? ` • ${c.brand}` : ""}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ) : null}
+      
 
             <div className="mt-1 flex items-center gap-2">
                 <input

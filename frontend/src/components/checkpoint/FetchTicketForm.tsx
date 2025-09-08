@@ -5,7 +5,7 @@ type Props = {
     onChange: (v: string) => void;
     loading: boolean;
     disabled: boolean;
-    onFetch: () => void;
+    onFetch: (id: string ) => void;
 };
 
 export default function FetchTicketForm({ value, onChange, loading, disabled, onFetch }: Props) {
@@ -16,9 +16,9 @@ export default function FetchTicketForm({ value, onChange, loading, disabled, on
                 placeholder="Paste/scan Ticket ID"
                 value={value}
                 onChange={(e) => onChange(e.currentTarget.value)}
-                onKeyDown={(e) => e.key === "Enter" && !disabled && onFetch()}
+                onKeyDown={(e) => e.key === "Enter" && !disabled && onFetch(value)}
             />
-            <Button className="px-5" onClick={onFetch} disabled={disabled || loading}>
+            <Button className="px-5" onClick={() => onFetch(value)} disabled={disabled || loading}>
                 {loading ? "Fetching…" : "Fetch"}
             </Button>
         </div>
