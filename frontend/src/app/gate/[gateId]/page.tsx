@@ -36,11 +36,10 @@ export default function GatePage() {
                         prev?.map((z) => (z.id === payload.id ? { ...z, ...payload } : z)) ?? prev
                     );
                 },
-            },
-            undefined
+            }
         );
         subscribeGate(gateId);
-        return () => disconnectWS();
+        // return () => disconnectWS();
     }, [gateId, qc, setWs]);
 
     const checkinVisitor = useCheckinVisitor();

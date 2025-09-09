@@ -36,26 +36,28 @@ export default function AdminZonesPage() {
         [form]
     );
 
+
+
     return (
         <div className="space-y-6">
-            <h1 className="text-xl font-semibold">Zones</h1>
+            {/* <h1 className="text-xl font-semibold">Zones</h1> */}
 
-            <div className="rounded-xl border bg-white p-4">
+            <div className="rounded-xl  bg-white p-4">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <input
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         placeholder="id"
                         value={form.id}
                         onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))}
                     />
                     <input
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         placeholder="name"
                         value={form.name}
                         onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
                     />
                     <select
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         value={form.categoryId}
                         onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))}
                     >
@@ -66,21 +68,21 @@ export default function AdminZonesPage() {
                     </select>
                     <input
                         type="number"
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         placeholder="total slots"
                         value={form.totalSlots || ""}
                         onChange={(e) => setForm((s) => ({ ...s, totalSlots: Number(e.target.value) || 0 }))}
                     />
                     <input
                         type="number"
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         placeholder="rate normal"
                         value={form.rateNormal || ""}
                         onChange={(e) => setForm((s) => ({ ...s, rateNormal: Number(e.target.value) || 0 }))}
                     />
                     <input
                         type="number"
-                        className="rounded-lg border px-3 py-2 text-sm"
+                        className="rounded-lg  px-3 py-2 text-sm"
                         placeholder="rate special"
                         value={form.rateSpecial || ""}
                         onChange={(e) => setForm((s) => ({ ...s, rateSpecial: Number(e.target.value) || 0 }))}
@@ -121,7 +123,7 @@ export default function AdminZonesPage() {
             ) : isError ? (
                 <div className="text-red-600">Failed to load zones.</div>
             ) : (
-                <div className="overflow-x-auto rounded-xl border bg-white">
+                <div className="overflow-x-auto rounded-xl  bg-white">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-left">
                             <tr>
@@ -137,7 +139,7 @@ export default function AdminZonesPage() {
                         </thead>
                         <tbody>
                             {data?.map((z: Zone) => (
-                                <tr key={z.id} className="border-t">
+                                <tr key={z.id} className="-t">
                                     <td className="px-3 py-2">{z.id}</td>
                                     <td className="px-3 py-2">{z.name}</td>
                                     <td className="px-3 py-2">{z.categoryId}</td>
@@ -146,7 +148,7 @@ export default function AdminZonesPage() {
                                     <td className="px-3 py-2 text-right">{z.rateSpecial ?? "—"}</td>
                                     <td className="px-3 py-2">
                                         <button
-                                            className="rounded-full border px-3 py-1 text-xs"
+                                            className="rounded-full  px-3 py-1 text-xs"
                                             onClick={() => toggleM.mutate({ id: z.id, open: !z.open })}
                                             disabled={toggleM.isPending}
                                         >
@@ -156,14 +158,14 @@ export default function AdminZonesPage() {
                                     <td className="px-3 py-2">
                                         <div className="flex gap-2">
                                             <button
-                                                className="rounded-full border px-3 py-1 text-xs"
+                                                className="rounded-full  px-3 py-1 text-xs"
                                                 onClick={() => updateM.mutate({ id: z.id, patch: { rateNormal: (z.rateNormal ?? 0) + 1 } })}
                                                 disabled={updateM.isPending}
                                             >
                                                 + RateN
                                             </button>
                                             <button
-                                                className="rounded-full border px-3 py-1 text-xs text-red-600"
+                                                className="rounded-full  px-3 py-1 text-xs text-red-600"
                                                 onClick={() => deleteM.mutate({ id: z.id })}
                                                 disabled={deleteM.isPending}
                                             >

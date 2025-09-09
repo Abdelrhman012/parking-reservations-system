@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import {  useMemo } from "react";
 import Cookies from "js-cookie";
-import { useParkingState } from "@/services/queries/admin";
+import {  useParkingState } from "@/services/queries/admin";
+
 
 type ParkingStateRow = {
     zoneId: string;
@@ -28,7 +29,10 @@ function humanizeCategoryId(id?: string): string {
 
 export default function AdminDashboard() {
     const token = Cookies.get("ps_token");
+
     const { data, isLoading, isError } = useParkingState(token);
+
+    
 
     const rows = (data as unknown as ParkingStateRow[]) ?? [];
 

@@ -17,6 +17,7 @@ import Spinner from "@/components/Spinner";
 import CheckoutHeader from "@/components/checkpoint/CheckoutHeader";
 import Button from "@/components/Button";
 import SubscriberDetails from "@/components/checkpoint/SubscriberDetails";
+import WsClient from "@/components/WsClient";
 
 
 export default function CheckoutPanel() {
@@ -64,7 +65,7 @@ export default function CheckoutPanel() {
         if (ticketIdForQuery === trimmed) {
             refetchTicket();
         } else {
-            setVerifiedInput(trimmed); 
+            setVerifiedInput(trimmed);
         }
     }
 
@@ -170,104 +171,109 @@ export default function CheckoutPanel() {
         !!verifiedSubId && !subLoading && !subError && !!sub;
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
-                <CheckoutHeader className="mx-auto w-[90%]" />
+        <>
+            <WsClient />
 
-                <div className="flex items-center justify-center">
-                    <div className="mx-auto w-[90%] p-4">
-                        <div className={sub ? "grid gap-6 lg:grid-cols-2" : "mx-auto max-w-[30rem]"}>
-                            {/* LEFT: Checkout card */}
-                            <div className="space-y-6 rounded-xl border bg-white p-4 shadow-sm">
-                                <h2 className="mb-3 text-lg font-semibold text-black">Check-out</h2>
+            <div className="min-h-screen bg-gray-100">
+                <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+                    <CheckoutHeader className="mx-auto w-[90%]" />
 
-                                <FetchTicketForm
-                                    value={input}
-                                    onChange={setInput}
-                                    loading={isFetchingTicket}
-                                    disabled={!input.trim()}
-                                    onFetch={doFetchTicket}
-                                />
+                    <div className="flex items-center justify-center">
+                        <div className="mx-auto w-[90%] p-4">
+                            <div className={sub ? "grid gap-6 lg:grid-cols-2" : "mx-auto max-w-[30rem]"}>
+                                {/* LEFT: Checkout card */}
+                                <div className="space-y-6 rounded-xl border bg-white p-4 shadow-sm">
+                                    <h2 className="mb-3 text-lg font-semibold text-black">Check-out</h2>
 
-                                {ticket ? (
-                                    <TicketInfo
-                                        type={ticket.type}
-                                        gateId={ticket.gateId}
-                                        zoneId={ticket.zoneId}
-                                        checkInAt={
-                                            (ticket as unknown as { checkinAt?: string })?.checkinAt ??
-                                            (ticket as unknown as { createdAt?: string })?.createdAt ??
-                                            ""
-                                        }
+                                    <FetchTicketForm
+                                        value={input}
+                                        onChange={setInput}
+                                        loading={isFetchingTicket}
+                                        disabled={!input.trim()}
+                                        onFetch={doFetchTicket}
                                     />
-                                ) : null}
 
-                                <SubscriberSection
-                                    visible={isSubscriberTicket}
-                                    subIdInput={subIdInput}
-                                    onChangeSubId={setSubIdInput}
-                                    onVerify={() => {
-                                        const v = subIdInput.trim();
-                                        if (!v) return;
-                                        setVerifiedSubId(v);
-                                        setPendingVerifyId(v);
-                                    }}
-                                    onClearVerified={() => setVerifiedSubId("")}
-                                    verifiedSubId={verifiedSubId}
-                                    sub={sub}
-                                    subLoading={subLoading}
-                                    subError={subError}
-                                    forceConvertToVisitor={forceConvertToVisitor}
-                                    onToggleConvert={setForce}
-                                />
-
-                                <div className="mt-4 flex justify-end">
-                                    <Button
-                                        disabled={!input.trim() || checkout.isPending}
-                                        onClick={onCheckout}
-                                    >
-                                        {checkout.isPending ? "Checking out…" : "Checkout"}
-                                    </Button>
-                                </div>
-
-                                {checkout.data ? (
-                                    <div className="mt-6">
-                                        <BreakdownTable
-                                            segments={checkout.data.breakdown}
-                                            total={checkout.data.amount}
-                                            durationHours={checkout.data.durationHours}
+                                    {ticket ? (
+                                        <TicketInfo
+                                            type={ticket.type}
+                                            gateId={ticket.gateId}
+                                            zoneId={ticket.zoneId}
+                                            checkInAt={
+                                                (ticket as unknown as { checkinAt?: string })?.checkinAt ??
+                                                (ticket as unknown as { createdAt?: string })?.createdAt ??
+                                                ""
+                                            }
                                         />
+                                    ) : null}
+
+                                    <SubscriberSection
+                                        visible={isSubscriberTicket}
+                                        subIdInput={subIdInput}
+                                        onChangeSubId={setSubIdInput}
+                                        onVerify={() => {
+                                            const v = subIdInput.trim();
+                                            if (!v) return;
+                                            setVerifiedSubId(v);
+                                            setPendingVerifyId(v);
+                                        }}
+                                        onClearVerified={() => setVerifiedSubId("")}
+                                        verifiedSubId={verifiedSubId}
+                                        sub={sub}
+                                        subLoading={subLoading}
+                                        subError={subError}
+                                        forceConvertToVisitor={forceConvertToVisitor}
+                                        onToggleConvert={setForce}
+                                    />
+
+                                    <div className="mt-4 flex justify-end">
+                                        <Button
+                                            disabled={!input.trim() || checkout.isPending}
+                                            onClick={onCheckout}
+                                        >
+                                            {checkout.isPending ? "Checking out…" : "Checkout"}
+                                        </Button>
                                     </div>
-                                ) : null}
-                            </div>
 
-                            {/* RIGHT: Subscriber details card */}
-                            {sub && (
-                                <div className="rounded-xl border bg-white p-4 shadow-sm">
-                                    <h3 className="mb-3 text-base font-semibold text-gray-900">
-                                        Subscriber details
-                                    </h3>
-
-                                    {!verifiedSubId ? (
-                                        <p className="text-sm text-gray-600">
-                                            Verify a subscriber ID from the left panel to see details here.
-                                        </p>
-                                    ) : subLoading ? (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Spinner size={16} />
-                                            Loading subscriber…
+                                    {checkout.data ? (
+                                        <div className="mt-6">
+                                            <BreakdownTable
+                                                segments={checkout.data.breakdown}
+                                                total={checkout.data.amount}
+                                                durationHours={checkout.data.durationHours}
+                                            />
                                         </div>
-                                    ) : subError ? (
-                                        <p className="text-sm text-red-600">Subscription not found.</p>
-                                    ) : showSubscriberDetails && sub ? (
-                                        <SubscriberDetails sub={sub} />
                                     ) : null}
                                 </div>
-                            )}
+
+                                {/* RIGHT: Subscriber details card */}
+                                {sub && (
+                                    <div className="rounded-xl border bg-white p-4 shadow-sm">
+                                        <h3 className="mb-3 text-base font-semibold text-gray-900">
+                                            Subscriber details
+                                        </h3>
+
+                                        {!verifiedSubId ? (
+                                            <p className="text-sm text-gray-600">
+                                                Verify a subscriber ID from the left panel to see details here.
+                                            </p>
+                                        ) : subLoading ? (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Spinner size={16} />
+                                                Loading subscriber…
+                                            </div>
+                                        ) : subError ? (
+                                            <p className="text-sm text-red-600">Subscription not found.</p>
+                                        ) : showSubscriberDetails && sub ? (
+                                            <SubscriberDetails sub={sub} />
+                                        ) : null}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
+
     );
 }

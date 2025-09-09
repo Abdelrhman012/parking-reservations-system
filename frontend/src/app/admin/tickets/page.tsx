@@ -42,7 +42,7 @@ export default function AdminTicketsPage() {
                                 <th className="px-3 py-2">Gate</th>
                                 <th className="px-3 py-2">Zone</th>
                                 <th className="px-3 py-2">Check-in</th>
-                                <th className="px-3 py-2">Check-out</th>
+                                {tab === "checkedout" && <th className="px-3 py-2">Check-out</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -53,7 +53,7 @@ export default function AdminTicketsPage() {
                                     <td className="px-3 py-2">{t.gateId}</td>
                                     <td className="px-3 py-2">{t.zoneId}</td>
                                     <td className="px-3 py-2">{t.checkinAt ? new Date(t.checkinAt).toLocaleString() : "—"}</td>
-                                    <td className="px-3 py-2">{t.checkoutAt ? new Date(t.checkoutAt).toLocaleString() : "—"}</td>
+                                    {tab === "checkedout" && <td className="px-3 py-2">{t.checkoutAt ? new Date(t.checkoutAt).toLocaleString() : "—"}</td>}
                                 </tr>
                             ))}
                         </tbody>
