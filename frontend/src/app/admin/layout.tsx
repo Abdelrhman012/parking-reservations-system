@@ -1,7 +1,8 @@
 "use client";
 
-import {  usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import WSStatus from "@/components/WSStatus";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -22,7 +23,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="min-h-screen bg-gray-100 text-[#333]">
             <header className="sticky top-0 z-10 border-b bg-white">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-                    <div className="text-lg font-semibold">Admin</div>
+                    <div className="flex items-center gap-2">
+                        <WSStatus />
+                        <div className="text-lg font-semibold">Admin</div>
+                    </div>
                     <nav className="flex flex-wrap gap-3 text-sm">
                         {nav.map((n) => (
                             <Link

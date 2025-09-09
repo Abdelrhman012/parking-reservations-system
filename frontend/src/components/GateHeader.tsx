@@ -8,6 +8,7 @@ export default function GateHeader({ gateId }: { gateId: string }) {
     const { data: gates } = useGates();
     const gate = gates?.find((g) => g.id === gateId);
     const gateLocation = gate?.location ?? "—";
+    const gateName = gate?.name ?? "—";
 
     return (
         <header className="flex items-center justify-between gap-4 rounded-xl border bg-white/60 px-4 py-3 shadow-sm backdrop-blur">
@@ -15,8 +16,8 @@ export default function GateHeader({ gateId }: { gateId: string }) {
                 <WSStatus />
 
                 <div>
-                    <div className="text-lg font-semibold text-gray-900">{formatGateLabel(gateId)}</div>
-                    <div className="text-sm  text-gray-400 ">{gateLocation}</div>
+                    <div className="text-lg font-semibold text-gray-900">{gateName}</div>
+                    <div className="text-sm  text-gray-400 ">{formatGateLabel(gateId)} - {gateLocation}</div>
                 </div>
             </div>
             <Clock />
