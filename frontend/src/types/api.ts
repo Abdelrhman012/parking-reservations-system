@@ -41,6 +41,7 @@ export type Zone = {
   rateNormal: number;
   rateSpecial: number;
   open: boolean;
+  zoneId?: string;
 };
 
 // Parking-state adds an extra aggregate count for admin report
