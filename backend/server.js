@@ -360,14 +360,17 @@ app.get(BASE + '/admin/reports/parking-state', (req, res) => {
     return {
       zoneId: z.id,
       name: z.name,
+      categoryId: z.categoryId,
       totalSlots: z.totalSlots,
       occupied: state.occupied,
       free: state.free,
       reserved: state.reserved,
       availableForVisitors: state.availableForVisitors,
       availableForSubscribers: state.availableForSubscribers,
-      subscriberCount: db.subscriptions.filter(s => s.active && s.category === z.categoryId).length,
-      open: z.open
+      subscriberCount: db.subscriptions.filter(
+        (s) => s.active && s.category === z.categoryId
+      ).length,
+      open: z.open,
     };
   });
   res.json(report);
@@ -437,4 +440,217 @@ app.get(BASE + '/admin/subscriptions', (req, res) => {
 // Start server
 server.listen(PORT, () => {
   console.log(`Parking backend starter listening on http://localhost:${PORT}${BASE}`);
+});
+
+
+// ===== Admin: users =====
+app.get(BASE + '/admin/users', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const list = db.users.map(u => ({ id: u.id, username: u.username, name: u.name, role: u.role }));
+  res.json(list);
+});
+
+app.post(BASE + '/admin/users', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const { username, name, role, password } = req.body || {};
+  if (!username || !name || !role || !password) return res.status(400).json({ status:'error', message:'Missing fields' });
+  if (db.users.some(u => u.username === username)) return res.status(409).json({ status:'error', message:'Username exists' });
+  const id = uuidv4().split('-')[0];
+  db.users.push({ id, username, name, role, password });
+  res.status(201).json({ id, username, name, role });
+});
+
+// ===== Admin: gates =====
+app.get(BASE + '/admin/gates', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  res.json(db.gates);
+});
+
+app.post(BASE + '/admin/gates', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const { id, name, location, zoneIds = [] } = req.body || {};
+  if (!id || !name) return res.status(400).json({ status:'error', message:'Missing fields' });
+  if (db.gates.some(g => g.id === id)) return res.status(409).json({ status:'error', message:'Gate exists' });
+  db.gates.push({ id, name, location, zoneIds });
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'gate-created', targetType:'gate', targetId:id, details:{ id, name, location, zoneIds }, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.status(201).json({ id, name, location, zoneIds });
+});
+
+app.put(BASE + '/admin/gates/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const g = db.gates.find(x => x.id === req.params.id);
+  if (!g) return res.status(404).json({ status:'error', message:'Gate not found' });
+  Object.assign(g, req.body || {});
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'gate-updated', targetType:'gate', targetId:g.id, details:g, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json(g);
+});
+
+app.delete(BASE + '/admin/gates/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const i = db.gates.findIndex(x => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ status:'error', message:'Gate not found' });
+  const removed = db.gates[i];
+  db.gates.splice(i, 1);
+  db.zones.forEach(z => { z.gateIds = z.gateIds.filter(gid => gid !== removed.id); });
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'gate-removed', targetType:'gate', targetId:removed.id, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json({ ok:true });
+});
+
+// ===== Admin: zones =====
+app.get(BASE + '/admin/zones', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  res.json(db.zones.map(z => zonePayload(z)));
+});
+
+app.post(BASE + '/admin/zones', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const { id, name, categoryId, gateIds = [], totalSlots = 0, open = true } = req.body || {};
+  if (!id || !name || !categoryId) return res.status(400).json({ status:'error', message:'Missing fields' });
+  if (db.zones.some(z => z.id === id)) return res.status(409).json({ status:'error', message:'Zone exists' });
+  db.zones.push({ id, name, categoryId, gateIds, totalSlots, occupied:0, open });
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'zone-created', targetType:'zone', targetId:id, details:{ id, name, categoryId, gateIds, totalSlots, open }, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  wsBroadcastZoneUpdate(id);
+  res.status(201).json(zonePayload(db.zones.find(z => z.id === id)));
+});
+
+app.put(BASE + '/admin/zones/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const z = db.zones.find(x => x.id === req.params.id);
+  if (!z) return res.status(404).json({ status:'error', message:'Zone not found' });
+  const patch = req.body || {};
+  // prevent direct occupied tampering for safety; allow totalSlots, name, gateIds, categoryId, open
+  const allowed = ['name','categoryId','gateIds','totalSlots','open'];
+  Object.keys(patch).forEach(k => { if (allowed.includes(k)) z[k] = patch[k]; });
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'zone-updated', targetType:'zone', targetId:z.id, details:patch, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  wsBroadcastZoneUpdate(z.id);
+  res.json(zonePayload(z));
+});
+
+app.delete(BASE + '/admin/zones/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const i = db.zones.findIndex(x => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ status:'error', message:'Zone not found' });
+  const removed = db.zones[i];
+  db.zones.splice(i, 1);
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'zone-removed', targetType:'zone', targetId:removed.id, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json({ ok:true });
+});
+
+// ===== Admin: categories =====
+app.get(BASE + '/admin/categories', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  res.json(db.categories);
+});
+
+app.post(BASE + '/admin/categories', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const { id, name, description, rateNormal, rateSpecial } = req.body || {};
+  if (!id || !name || rateNormal == null || rateSpecial == null) return res.status(400).json({ status:'error', message:'Missing fields' });
+  if (db.categories.some(c => c.id === id)) return res.status(409).json({ status:'error', message:'Category exists' });
+  const cat = { id, name, description, rateNormal, rateSpecial };
+  db.categories.push(cat);
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'category-created', targetType:'category', targetId:id, details:cat, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.status(201).json(cat);
+});
+
+app.delete(BASE + '/admin/categories/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const i = db.categories.findIndex(c => c.id === req.params.id);
+  if (i < 0) return res.status(404).json({ status:'error', message:'Category not found' });
+  const removed = db.categories[i];
+  db.categories.splice(i, 1);
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'category-removed', targetType:'category', targetId:removed.id, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json({ ok:true });
+});
+
+// ===== Admin: tickets list =====
+app.get(BASE + '/admin/tickets', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const { status } = req.query;
+  let list = db.tickets.slice();
+  if (status === 'checkedin') list = list.filter(t => !t.checkoutAt);
+  if (status === 'checkedout') list = list.filter(t => !!t.checkoutAt);
+  res.json(list);
+});
+
+// ===== Admin: rush-hours (list/update/delete) =====
+app.get(BASE + '/admin/rush-hours', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  res.json(db.rushHours);
+});
+
+app.put(BASE + '/admin/rush-hours/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const r = db.rushHours.find(x => x.id === req.params.id);
+  if (!r) return res.status(404).json({ status:'error', message:'Not found' });
+  Object.assign(r, req.body || {});
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'rush-updated', targetType:'rush', targetId:r.id, details:r, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json(r);
+});
+
+app.delete(BASE + '/admin/rush-hours/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const i = db.rushHours.findIndex(x => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ status:'error', message:'Not found' });
+  const removed = db.rushHours[i];
+  db.rushHours.splice(i, 1);
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'rush-removed', targetType:'rush', targetId:removed.id, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json({ ok:true });
+});
+
+// ===== Admin: vacations (list/update/delete) =====
+app.get(BASE + '/admin/vacations', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  res.json(db.vacations);
+});
+
+app.put(BASE + '/admin/vacations/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const v = db.vacations.find(x => x.id === req.params.id);
+  if (!v) return res.status(404).json({ status:'error', message:'Not found' });
+  Object.assign(v, req.body || {});
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'vacation-updated', targetType:'vacation', targetId:v.id, details:v, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json(v);
+});
+
+app.delete(BASE + '/admin/vacations/:id', (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'admin') return res.status(403).json({ status:'error', message:'Forbidden' });
+  const i = db.vacations.findIndex(x => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ status:'error', message:'Not found' });
+  const removed = db.vacations[i];
+  db.vacations.splice(i, 1);
+  const msg = JSON.stringify({ type:'admin-update', payload:{ adminId:user.id, action:'vacation-removed', targetType:'vacation', targetId:removed.id, timestamp: nowIso() }});
+  gateSubs.forEach(set => set.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); }));
+  res.json({ ok:true });
 });
