@@ -150,7 +150,7 @@ export default function GatePage() {
                 <GateHeader gateId={gateId || "—"} />
 
                 {/* Optional banner to indicate current pricing mode */}
-                <div className="rounded-xl border bg-white p-3 text-sm text-gray-700">
+                <div className="rounded-xl  bg-white p-3 text-sm text-gray-700">
                     {special.special ? (
                         <div className="flex items-center gap-2">
                             <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
