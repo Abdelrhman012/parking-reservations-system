@@ -14,12 +14,12 @@ export default function AdminTicketsPage() {
         <div className="space-y-6">
             <h1 className="text-xl font-semibold">Tickets</h1>
 
-            <div className="inline-flex rounded-lg border bg-white p-1">
+            <div className="inline-flex rounded-full bg-white p-1 mx-auto">
                 {(["checkedin", "checkedout"] as const).map((t) => (
                     <button
                         key={t}
                         onClick={() => setTab(t)}
-                        className={`rounded-md px-3 py-1 text-sm ${tab === t ? "bg-gray-900 text-white" : "hover:bg-gray-100"}`}
+                        className={`rounded-full px-3 py-1 text-sm ${tab === t ? "bg-gray-900 text-white" : "hover:bg-gray-100 cursor-pointer"}`}
                     >
                         {t}
                     </button>
@@ -33,7 +33,7 @@ export default function AdminTicketsPage() {
             ) : !data?.length ? (
                 <div className="text-gray-600">No tickets.</div>
             ) : (
-                <div className="overflow-x-auto rounded-xl border bg-white">
+                <div className="overflow-x-auto rounded-md bg-white">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-left">
                             <tr>
@@ -47,7 +47,7 @@ export default function AdminTicketsPage() {
                         </thead>
                         <tbody>
                             {data.map((t: Ticket) => (
-                                <tr key={t.id} className="border-t">
+                                <tr key={t.id} className="t">
                                     <td className="px-3 py-2">{t.id}</td>
                                     <td className="px-3 py-2">{t.type}</td>
                                     <td className="px-3 py-2">{t.gateId}</td>

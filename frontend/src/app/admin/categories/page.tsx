@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 import AdminRealtime from "@/components/admin/AdminRealtime";
 import { Modal } from "@/components/admin/Modal";
 import Button from "@/components/Button";
+import { IconButton } from "@/components/admin/IconButton";
 
 type CatForm = {
     name: string;
@@ -134,7 +135,7 @@ export default function AdminCategoriesPage() {
             <div className="rounded-xl bg-white p-4">
                 <div className="grid items-center gap-3 md:grid-cols-12">
                     <input
-                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-3"
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-6"
                         placeholder="name"
                         value={form.name}
                         onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
@@ -301,32 +302,4 @@ export default function AdminCategoriesPage() {
     );
 }
 
-/* UI bits */
-
-function IconButton({
-    children,
-    title,
-    onClick,
-    disabled,
-    danger,
-}: {
-    children: React.ReactNode;
-    title?: string;
-    onClick?: () => void;
-    disabled?: boolean;
-    danger?: boolean;
-}) {
-    return (
-        <button
-            type="button"
-            title={title}
-            onClick={onClick}
-            disabled={disabled}
-            className={`rounded-full p-2 hover:bg-gray-100 disabled:opacity-50 ${danger ? "text-red-600 hover:bg-red-50" : "text-gray-700"
-                }`}
-        >
-            {children}
-        </button>
-    );
-}
 
