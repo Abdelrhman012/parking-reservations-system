@@ -22,9 +22,9 @@ export default function AdminGatesPage() {
 
             <div className="rounded-xl border bg-white p-4">
                 <div className="grid gap-3 sm:grid-cols-3">
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="id" value={form.id} onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))} />
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="location" value={form.location} onChange={(e) => setForm((s) => ({ ...s, location: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="id" value={form.id} onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="location" value={form.location} onChange={(e) => setForm((s) => ({ ...s, location: e.target.value }))} />
                 </div>
                 <div className="mt-3">
                     <button

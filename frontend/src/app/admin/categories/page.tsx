@@ -37,11 +37,11 @@ export default function AdminCategoriesPage() {
 
             <div className="rounded-xl border bg-white p-4">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="id" value={form.id} onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))} />
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="description" value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} />
-                    <input type="number" className="rounded-lg border px-3 py-2 text-sm" placeholder="rate normal" value={form.rateNormal || ""} onChange={(e) => setForm((s) => ({ ...s, rateNormal: Number(e.target.value) || 0 }))} />
-                    <input type="number" className="rounded-lg border px-3 py-2 text-sm" placeholder="rate special" value={form.rateSpecial || ""} onChange={(e) => setForm((s) => ({ ...s, rateSpecial: Number(e.target.value) || 0 }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="id" value={form.id} onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="description" value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} />
+                    <input type="number" className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="rate normal" value={form.rateNormal || ""} onChange={(e) => setForm((s) => ({ ...s, rateNormal: Number(e.target.value) || 0 }))} />
+                    <input type="number" className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="rate special" value={form.rateSpecial || ""} onChange={(e) => setForm((s) => ({ ...s, rateSpecial: Number(e.target.value) || 0 }))} />
                 </div>
                 <div className="mt-3">
                     <button

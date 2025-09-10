@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import Cookies from "js-cookie";
 import {
     useAdminZones,
@@ -10,54 +10,152 @@ import {
     useToggleZoneOpen,
 } from "@/services/queries/admin";
 import type { Zone } from "@/types/api";
+import { Pencil, Trash2, X } from "lucide-react";
+import { makeZoneId } from "@/utils/ids";
+import { toast } from "@/lib/toast";
+
+type ZoneForm = {
+    name: string;
+    categoryId: string;
+    gateIds: string[];
+    totalSlots: number;
+    open: boolean;
+};
+
+const defaultForm: ZoneForm = {
+    name: "",
+    categoryId: "cat_regular",
+    gateIds: [],
+    totalSlots: 0,
+    open: true,
+};
 
 export default function AdminZonesPage() {
     const token = Cookies.get("ps_token");
-    const { data, isLoading, isError } = useAdminZones(token);
 
+    const { data, isLoading, isError } = useAdminZones(token);
     const createM = useCreateZone(token);
     const updateM = useUpdateZone(token);
     const deleteM = useDeleteZone(token);
     const toggleM = useToggleZoneOpen(token);
 
-    const [form, setForm] = useState({
-        id: "",
-        name: "",
-        categoryId: "cat_regular",
-        gateIds: [] as string[],
-        totalSlots: 0,
-        rateNormal: 0,
-        rateSpecial: 0,
-        open: true,
-    });
+    const [form, setForm] = useState<ZoneForm>(defaultForm);
+
+    const [editOpen, setEditOpen] = useState(false);
+    const [editOriginal, setEditOriginal] = useState<Zone | null>(null);
+    const [editForm, setEditForm] = useState<{
+        id: string;
+        name: string;
+        categoryId: string;
+        gateIds: string[];
+        totalSlots: number;
+        open: boolean;
+    }>({ id: "", ...defaultForm });
 
     const canCreate = useMemo(
-        () => form.id.trim() && form.name.trim() && form.totalSlots > 0,
+        () => form.name.trim() && form.totalSlots > 0,
         [form]
     );
 
+    useEffect(() => {
+        if (isError) toast("Failed to load zones.", "error");
+    }, [isError]);
 
+    const startEdit = useCallback((z: Zone) => {
+        setEditOriginal(z);
+        setEditForm({
+            id: z.id,
+            name: z.name,
+            categoryId: z.categoryId,
+            gateIds: Array.isArray(z.gateIds) ? z.gateIds : [],
+            totalSlots: z.totalSlots,
+            open: !!z.open,
+        });
+        setEditOpen(true);
+    }, []);
+
+    const submitEdit = useCallback(() => {
+        if (!editOriginal) return;
+        const patch: Partial<Zone> = {
+            name: editForm.name.trim(),
+            categoryId: editForm.categoryId,
+            gateIds: editForm.gateIds,
+            totalSlots: editForm.totalSlots,
+        };
+
+        updateM.mutate(
+            { id: editOriginal.id, patch },
+            {
+                onSuccess: () => {
+                    toast("Zone updated.", "success");
+                    if (editForm.open !== editOriginal.open) {
+                        toggleM.mutate(
+                            { id: editOriginal.id, open: editForm.open },
+                            {
+                                onSuccess: () =>
+                                    toast(editForm.open ? "Zone opened." : "Zone closed.", "success"),
+                                onError: (e) =>
+                                    toast(
+                                        e instanceof Error ? e.message : "Failed to toggle zone.",
+                                        "error"
+                                    ),
+                                onSettled: () => setEditOpen(false),
+                            }
+                        );
+                    } else {
+                        setEditOpen(false);
+                    }
+                },
+                onError: (e) =>
+                    toast(e instanceof Error ? e.message : "Failed to update zone.", "error"),
+            }
+        );
+    }, [editOriginal, editForm, updateM, toggleM]);
+
+    useEffect(() => {
+        if (!editOpen) setEditOriginal(null);
+    }, [editOpen]);
+
+    const onCreate = useCallback(() => {
+        const id = makeZoneId(form.name);
+        if (!id) {
+            toast("Please enter a valid name.", "error");
+            return;
+        }
+
+        createM.mutate(
+            {
+                id,
+                name: form.name.trim(),
+                categoryId: form.categoryId,
+                gateIds: form.gateIds,
+                totalSlots: form.totalSlots,
+                open: form.open,
+            },
+            {
+                onSuccess: () => {
+                    toast("Zone created.", "success");
+                    setForm(defaultForm);
+                },
+                onError: (e) =>
+                    toast(e instanceof Error ? e.message : "Failed to create zone.", "error"),
+            }
+        );
+    }, [createM, form]);
 
     return (
         <div className="space-y-6">
-            {/* <h1 className="text-xl font-semibold">Zones</h1> */}
-
-            <div className="rounded-xl  bg-white p-4">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Create form */}
+            <div className="rounded-xl bg-white p-4">
+                <div className="grid items-center gap-3 md:grid-cols-12">
                     <input
-                        className="rounded-lg  px-3 py-2 text-sm"
-                        placeholder="id"
-                        value={form.id}
-                        onChange={(e) => setForm((s) => ({ ...s, id: e.target.value }))}
-                    />
-                    <input
-                        className="rounded-lg  px-3 py-2 text-sm"
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-3"
                         placeholder="name"
                         value={form.name}
                         onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
                     />
                     <select
-                        className="rounded-lg  px-3 py-2 text-sm"
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-2"
                         value={form.categoryId}
                         onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))}
                     >
@@ -68,53 +166,43 @@ export default function AdminZonesPage() {
                     </select>
                     <input
                         type="number"
-                        className="rounded-lg  px-3 py-2 text-sm"
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-2"
                         placeholder="total slots"
                         value={form.totalSlots || ""}
-                        onChange={(e) => setForm((s) => ({ ...s, totalSlots: Number(e.target.value) || 0 }))}
-                    />
-                    <input
-                        type="number"
-                        className="rounded-lg  px-3 py-2 text-sm"
-                        placeholder="rate normal"
-                        value={form.rateNormal || ""}
-                        onChange={(e) => setForm((s) => ({ ...s, rateNormal: Number(e.target.value) || 0 }))}
-                    />
-                    <input
-                        type="number"
-                        className="rounded-lg  px-3 py-2 text-sm"
-                        placeholder="rate special"
-                        value={form.rateSpecial || ""}
-                        onChange={(e) => setForm((s) => ({ ...s, rateSpecial: Number(e.target.value) || 0 }))}
-                    />
-                    <label className="inline-flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={form.open}
-                            onChange={(e) => setForm((s) => ({ ...s, open: e.target.checked }))}
-                        />
-                        Open
-                    </label>
-                </div>
-                <div className="mt-3">
-                    <button
-                        className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                        disabled={!canCreate || createM.isPending}
-                        onClick={() =>
-                            createM.mutate({
-                                id: form.id.trim(),
-                                name: form.name.trim(),
-                                categoryId: form.categoryId,
-                                gateIds: form.gateIds,
-                                totalSlots: form.totalSlots,
-                                rateNormal: form.rateNormal,
-                                rateSpecial: form.rateSpecial,
-                                open: form.open,
-                            })
+                        onChange={(e) =>
+                            setForm((s) => ({ ...s, totalSlots: Number(e.target.value) || 0 }))
                         }
-                    >
-                        {createM.isPending ? "Creating…" : "Create"}
-                    </button>
+                    />
+                    <input
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-3"
+                        placeholder="gate ids (comma separated)"
+                        value={form.gateIds.join(",")}
+                        onChange={(e) =>
+                            setForm((s) => ({
+                                ...s,
+                                gateIds: e.target.value
+                                    .split(",")
+                                    .map((x) => x.trim())
+                                    .filter(Boolean),
+                            }))
+                        }
+                    />
+                    <div className="flex items-center gap-2 md:col-span-1">
+                        <Toggle
+                            checked={form.open}
+                            onChange={(v) => setForm((s) => ({ ...s, open: v }))}
+                        />
+                        <span className="text-sm text-gray-700">Open</span>
+                    </div>
+                    <div className="md:col-span-1">
+                        <button
+                            className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            disabled={!canCreate || createM.isPending}
+                            onClick={onCreate}
+                        >
+                            {createM.isPending ? "Creating…" : "Create"}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -123,7 +211,7 @@ export default function AdminZonesPage() {
             ) : isError ? (
                 <div className="text-red-600">Failed to load zones.</div>
             ) : (
-                <div className="overflow-x-auto rounded-xl  bg-white">
+                <div className="overflow-x-auto rounded-xl bg-white">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-left">
                             <tr>
@@ -131,10 +219,8 @@ export default function AdminZonesPage() {
                                 <th className="px-3 py-2">Name</th>
                                 <th className="px-3 py-2">Category</th>
                                 <th className="px-3 py-2 text-right">Total</th>
-                                <th className="px-3 py-2 text-right">Rate N</th>
-                                <th className="px-3 py-2 text-right">Rate S</th>
                                 <th className="px-3 py-2">Open</th>
-                                <th className="px-3 py-2" />
+                                <th className="px-3 py-2 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,33 +230,59 @@ export default function AdminZonesPage() {
                                     <td className="px-3 py-2">{z.name}</td>
                                     <td className="px-3 py-2">{z.categoryId}</td>
                                     <td className="px-3 py-2 text-right">{z.totalSlots}</td>
-                                    <td className="px-3 py-2 text-right">{z.rateNormal ?? "—"}</td>
-                                    <td className="px-3 py-2 text-right">{z.rateSpecial ?? "—"}</td>
                                     <td className="px-3 py-2">
-                                        <button
-                                            className="rounded-full  px-3 py-1 text-xs"
-                                            onClick={() => toggleM.mutate({ id: z.id, open: !z.open })}
+                                        <Toggle
+                                            checked={!!z.open}
+                                            onChange={(v) =>
+                                                toggleM.mutate(
+                                                    { id: z.id, open: v },
+                                                    {
+                                                        onSuccess: () =>
+                                                            toast(v ? "Zone opened." : "Zone closed.", "success"),
+                                                        onError: (e) =>
+                                                            toast(
+                                                                e instanceof Error
+                                                                    ? e.message
+                                                                    : "Failed to toggle zone.",
+                                                                "error"
+                                                            ),
+                                                    }
+                                                )
+                                            }
                                             disabled={toggleM.isPending}
-                                        >
-                                            {z.open ? "Close" : "Open"}
-                                        </button>
+                                        />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="rounded-full  px-3 py-1 text-xs"
-                                                onClick={() => updateM.mutate({ id: z.id, patch: { rateNormal: (z.rateNormal ?? 0) + 1 } })}
+                                        <div className="flex items-center justify-end gap-2">
+                                            <IconButton
+                                                title="Edit"
+                                                onClick={() => startEdit(z)}
                                                 disabled={updateM.isPending}
                                             >
-                                                + RateN
-                                            </button>
-                                            <button
-                                                className="rounded-full  px-3 py-1 text-xs text-red-600"
-                                                onClick={() => deleteM.mutate({ id: z.id })}
+                                                <Pencil className="h-4 w-4" />
+                                            </IconButton>
+                                            <IconButton
+                                                title="Delete"
+                                                onClick={() =>
+                                                    deleteM.mutate(
+                                                        { id: z.id },
+                                                        {
+                                                            onSuccess: () => toast("Zone deleted.", "success"),
+                                                            onError: (e) =>
+                                                                toast(
+                                                                    e instanceof Error
+                                                                        ? e.message
+                                                                        : "Failed to delete zone.",
+                                                                    "error"
+                                                                ),
+                                                        }
+                                                    )
+                                                }
                                                 disabled={deleteM.isPending}
+                                                danger
                                             >
-                                                Delete
-                                            </button>
+                                                <Trash2 className="h-4 w-4" />
+                                            </IconButton>
                                         </div>
                                     </td>
                                 </tr>
@@ -179,6 +291,163 @@ export default function AdminZonesPage() {
                     </table>
                 </div>
             )}
+
+            {editOpen && (
+                <Modal onClose={() => setEditOpen(false)} title={`Edit zone: ${editForm.id}`}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <input
+                            className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm sm:col-span-2"
+                            value={editForm.id}
+                            disabled
+                        />
+                        <input
+                            className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm"
+                            placeholder="name"
+                            value={editForm.name}
+                            onChange={(e) => setEditForm((s) => ({ ...s, name: e.target.value }))}
+                        />
+                        <select
+                            className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm"
+                            value={editForm.categoryId}
+                            onChange={(e) => setEditForm((s) => ({ ...s, categoryId: e.target.value }))}
+                        >
+                            <option value="cat_regular">cat_regular</option>
+                            <option value="cat_premium">cat_premium</option>
+                            <option value="cat_economy">cat_economy</option>
+                            <option value="cat_vip">cat_vip</option>
+                        </select>
+                        <input
+                            type="number"
+                            className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm"
+                            placeholder="total slots"
+                            value={editForm.totalSlots || ""}
+                            onChange={(e) =>
+                                setEditForm((s) => ({ ...s, totalSlots: Number(e.target.value) || 0 }))
+                            }
+                        />
+                        <div className="sm:col-span-2 flex items-center gap-3">
+                            <Toggle
+                                checked={editForm.open}
+                                onChange={(v) => setEditForm((s) => ({ ...s, open: v }))}
+                            />
+                            <span className="text-sm text-gray-700">Open</span>
+                        </div>
+                        <input
+                            className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm sm:col-span-2"
+                            placeholder="gate ids (comma separated)"
+                            value={editForm.gateIds.join(",")}
+                            onChange={(e) =>
+                                setEditForm((s) => ({
+                                    ...s,
+                                    gateIds: e.target.value
+                                        .split(",")
+                                        .map((x) => x.trim())
+                                        .filter(Boolean),
+                                }))
+                            }
+                        />
+                    </div>
+
+                    <div className="mt-5 flex justify-end gap-2">
+                        <button
+                            className="rounded-full px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                            onClick={() => setEditOpen(false)}
+                            disabled={updateM.isPending || toggleM.isPending}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            onClick={submitEdit}
+                            disabled={updateM.isPending || toggleM.isPending}
+                        >
+                            {updateM.isPending || toggleM.isPending ? "Saving…" : "Save changes"}
+                        </button>
+                    </div>
+                </Modal>
+            )}
+        </div>
+    );
+}
+
+/* UI helpers */
+
+function Toggle({
+    checked,
+    onChange,
+    disabled,
+}: {
+    checked: boolean;
+    onChange: (v: boolean) => void;
+    disabled?: boolean;
+}) {
+    return (
+        <label className={`inline-flex items-center ${disabled ? "opacity-60" : "cursor-pointer"}`}>
+            <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+                disabled={disabled}
+            />
+            <span className="relative h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-emerald-500">
+                <span className={`absolute ${checked ? "right-0.5" : "left-0.5"} top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4`} />
+            </span>
+        </label>
+    );
+}
+
+function IconButton({
+    children,
+    title,
+    onClick,
+    disabled,
+    danger,
+}: {
+    children: React.ReactNode;
+    title?: string;
+    onClick?: () => void;
+    disabled?: boolean;
+    danger?: boolean;
+}) {
+    return (
+        <button
+            type="button"
+            title={title}
+            onClick={onClick}
+            disabled={disabled}
+            className={`rounded-full p-2 hover:bg-gray-100 disabled:opacity-50 ${danger ? "text-red-600 hover:bg-red-50" : "text-gray-700"}`}
+        >
+            {children}
+        </button>
+    );
+}
+
+function Modal({
+    title,
+    onClose,
+    children,
+}: {
+    title?: string;
+    onClose: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+            <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+            <div className="relative z-10 w-full max-w-2xl rounded-xl bg-white p-5 shadow-xl">
+                <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+                    <button
+                        onClick={onClose}
+                        className="rounded-full p-2 text-gray-600 hover:bg-gray-100"
+                        aria-label="Close"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+                {children}
+            </div>
         </div>
     );
 }

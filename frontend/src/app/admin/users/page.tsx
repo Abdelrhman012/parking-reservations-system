@@ -28,13 +28,13 @@ export default function AdminUsersPage() {
 
             <div className="rounded-xl border bg-white p-4">
                 <div className="grid gap-3 sm:grid-cols-4">
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="username" value={form.username} onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} />
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-                    <select className="rounded-lg border px-3 py-2 text-sm" value={form.role} onChange={(e) => setForm((s) => ({ ...s, role: e.target.value as "admin" | "employee" }))}>
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="username" value={form.username} onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+                    <select className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" value={form.role} onChange={(e) => setForm((s) => ({ ...s, role: e.target.value as "admin" | "employee" }))}>
                         <option value="employee">employee</option>
                         <option value="admin">admin</option>
                     </select>
-                    <input className="rounded-lg border px-3 py-2 text-sm" placeholder="password" value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} />
+                    <input className="w-full rounded-full text-black bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500" placeholder="password" value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} />
                 </div>
                 <div className="mt-3">
                     <button
