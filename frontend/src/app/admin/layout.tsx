@@ -23,8 +23,9 @@ import {
     IdCard,
     ScrollText,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+ function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
 
@@ -188,3 +189,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </>
     );
 }
+export default dynamic(() => Promise.resolve(AdminLayout), { ssr: false });
