@@ -640,12 +640,126 @@ app.post(BASE + "/admin/vacations", (req, res) => {
   res.status(201).json(v);
 });
 
+function broadcastAdminUpdate({ adminId, action, targetType, targetId, details }) {
+  const msg = JSON.stringify({
+    type: 'admin-update',
+    payload: {
+      adminId,
+      action,
+      targetType, 
+      targetId,
+      details,
+      timestamp: nowIso()
+    }
+  });
+  gateSubs.forEach(set =>
+    set.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+    })
+  );
+}
+
+
 // Admin get subscriptions
 app.get(BASE + "/admin/subscriptions", (req, res) => {
   const user = req.user;
   if (!user || user.role !== "admin")
     return res.status(403).json({ status: "error", message: "Forbidden" });
   res.json(db.subscriptions);
+});
+
+app.post(BASE + "/admin/subscriptions", (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== "admin")
+    return res.status(403).json({ status: "error", message: "Forbidden" });
+
+  const body = req.body || {};
+  const {
+    id,
+    userName = "",
+    active = true,
+    category,
+    categories,
+    startsAt,
+    expiresAt,
+    cars = [],
+    currentCheckins = [],
+  } = body;
+
+  if (!id || !category || !startsAt || !expiresAt) {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Missing required fields" });
+  }
+  if (db.subscriptions.find((s) => s.id === id)) {
+    return res
+      .status(409)
+      .json({ status: "error", message: "Subscription exists" });
+  }
+
+  const cats =
+    Array.isArray(categories) && categories.length
+      ? [...new Set(categories)]
+      : [category];
+  const sub = {
+    id,
+    userName,
+    active: !!active,
+    category,
+    categories: cats,
+    startsAt,
+    expiresAt,
+    cars: Array.isArray(cars) ? cars : [],
+    currentCheckins: Array.isArray(currentCheckins) ? currentCheckins : [],
+  };
+
+  db.subscriptions.push(sub);
+  broadcastAdminUpdate({
+    adminId: user.id,
+    action: "subscription-created",
+    targetType: "subscription",
+    targetId: id,
+    details: sub,
+  });
+  res.status(201).json(sub);
+});
+
+app.put(BASE + "/admin/subscriptions/:id", (req, res) => {
+  const user = req.user;
+  if (!user || user.role !== "admin")
+    return res.status(403).json({ status: "error", message: "Forbidden" });
+  const id = req.params.id;
+  const sub = db.subscriptions.find((s) => s.id === id);
+  if (!sub)
+    return res
+      .status(404)
+      .json({ status: "error", message: "Subscription not found" });
+
+  const {
+    userName,
+    active,
+    category,
+    categories,
+    startsAt,
+    expiresAt,
+    cars,
+  } = req.body || {};
+  if (userName !== undefined) sub.userName = userName;
+  if (active !== undefined) sub.active = !!active;
+  if (category !== undefined) sub.category = category;
+  if (Array.isArray(categories)) sub.categories = [...new Set(categories)];
+  if (startsAt !== undefined) sub.startsAt = startsAt;
+  if (expiresAt !== undefined) sub.expiresAt = expiresAt;
+  if (Array.isArray(cars)) sub.cars = cars;
+
+  broadcastAdminUpdate({
+    adminId: user.id,
+    action: "subscription-updated",
+    targetType: "subscription",
+    targetId: id,
+    details: sub,
+  });
+  res.json(sub);
 });
 
 // Start server

@@ -34,3 +34,25 @@ export function clearSession() {
     useApp.getState().logout();
   } catch {}
 }
+const isClient = (): boolean =>
+  typeof window !== "undefined" && typeof document !== "undefined";
+
+export function getCookie(name: string): string | undefined {
+  if (!isClient()) return undefined;
+  const parts = document.cookie.split("; ").filter(Boolean);
+  for (const part of parts) {
+    const [k, ...rest] = part.split("=");
+    if (k === name) return decodeURIComponent(rest.join("="));
+  }
+  return undefined;
+}
+
+export function getToken(): string | undefined {
+  return getCookie(TOKEN_COOKIE);
+}
+export function getRole(): string | undefined {
+  return getCookie(ROLE_COOKIE);
+}
+export function getName(): string | undefined {
+  return getCookie(Name_COOKIE);
+}

@@ -219,6 +219,12 @@ export const Subscriptions = {
 };
 
 export const AdminSubscriptions = {
+  list: (token: string) =>
+    api<Subscription[]>("/admin/subscriptions", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
   create: (
     token: string,
     body: Omit<Subscription, "currentCheckins"> & {
@@ -230,6 +236,7 @@ export const AdminSubscriptions = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     }),
+
   update: (token: string, id: string, body: Partial<Subscription>) =>
     api<Subscription>(`/admin/subscriptions/${id}`, {
       method: "PUT",
@@ -237,7 +244,6 @@ export const AdminSubscriptions = {
       body: JSON.stringify(body),
     }),
 };
-
 // ==================================
 // Tickets / Reservations
 // ==================================
@@ -354,3 +360,4 @@ export const AdminReports = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };
+

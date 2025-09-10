@@ -12,9 +12,10 @@ import {
   AdminTickets,
   AdminRushHours,
   AdminVacations,
+  AdminSubscriptions,
 } from "../api";
 import { qk } from "../queryKeys";
-import { Category, Gate, RushHour, Ticket, User, Vacation, Zone } from "@/types/api";
+import { Category, Gate, RushHour, Subscription, Ticket, User, Vacation, Zone } from "@/types/api";
 
 // Reports
 export const useParkingState = (token?: string) =>
@@ -89,6 +90,45 @@ export const useToggleZoneOpen = (token?: string) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.admin.parkingState });
       qc.invalidateQueries({ queryKey: qk.admin.zones });
+    },
+  });
+};
+
+export const useAdminSubscriptions = (token?: string) =>
+  useQuery<Subscription[]>({
+    queryKey: qk.admin.subscriptions,
+    queryFn: () => AdminSubscriptions.list(token!),
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+
+export const useCreateAdminSubscription = (token?: string) => {
+  const qc = useQueryClient();
+  return useMutation<
+    Subscription,
+    Error,
+    Omit<Subscription, "currentCheckins"> & {
+      currentCheckins?: Subscription["currentCheckins"];
+    }
+  >({
+    mutationFn: (body) => AdminSubscriptions.create(token!, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.admin.subscriptions });
+    },
+  });
+};
+
+export const useUpdateAdminSubscription = (token?: string) => {
+  const qc = useQueryClient();
+  return useMutation<
+    Subscription,
+    Error,
+    { id: string; patch: Partial<Subscription> }
+  >({
+    mutationFn: ({ id, patch }) =>
+      AdminSubscriptions.update(token!, id, patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.admin.subscriptions });
     },
   });
 };
@@ -322,3 +362,4 @@ export const useDeleteVacation = (token?: string) => {
       qc.invalidateQueries({ queryKey: qk.admin.vacations }),
   });
 };
+

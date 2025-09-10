@@ -18,6 +18,8 @@ import { toast } from "@/lib/toast";
 import { Modal } from "@/components/admin/Modal";
 import { IconButton } from "@/components/admin/IconButton";
 import { MultiSelect } from "@/components/admin/MultiSelect";
+import { Toggle } from "@/components/admin/Toggle";
+import Button from "@/components/Button";
 
 type ZoneForm = {
     name: string;
@@ -145,22 +147,13 @@ export default function AdminZonesPage() {
         );
     }, [createM, form]);
 
-    const handleMultiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const values = Array.from(e.target.selectedOptions).map((o) => o.value);
-        setForm((s) => ({ ...s, gateIds: values }));
-    };
-
-    const handleEditMultiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const values = Array.from(e.target.selectedOptions).map((o) => o.value);
-        setEditForm((s) => ({ ...s, gateIds: values }));
-    };
 
     return (
         <div className="space-y-6">
             <div className="rounded-xl bg-white p-4">
                 <div className="grid items-center gap-3 md:grid-cols-12">
                     <input
-                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-3"
+                        className="w-full rounded-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary-500 md:col-span-2"
                         placeholder="name"
                         value={form.name}
                         onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
@@ -199,14 +192,14 @@ export default function AdminZonesPage() {
                         <span className="text-sm text-gray-700">Open</span>
                     </div>
 
-                    <div className="md:col-span-1">
-                        <button
-                            className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    <div className="md:col-span-2">
+                        <Button
+                            className="w-full"
                             disabled={!canCreate || createM.isPending}
                             onClick={onCreate}
                         >
                             {createM.isPending ? "Creating…" : "Create"}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -356,29 +349,3 @@ export default function AdminZonesPage() {
     );
 }
 
-function Toggle({
-    checked,
-    onChange,
-    disabled,
-}: {
-    checked: boolean;
-    onChange: (v: boolean) => void;
-    disabled?: boolean;
-}) {
-    return (
-        <label className={`inline-flex items-center ${disabled ? "opacity-60" : "cursor-pointer"}`}>
-            <input
-                type="checkbox"
-                className="peer sr-only"
-                checked={checked}
-                onChange={(e) => onChange(e.target.checked)}
-                disabled={disabled}
-            />
-            <span className="relative h-5 w-9 rounded-full bg-gray-300 transition-colors peer-checked:bg-emerald-500">
-                <span
-                    className={`absolute ${checked ? "right-0.5" : "left-0.5"} top-0.5 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-4`}
-                />
-            </span>
-        </label>
-    );
-}
