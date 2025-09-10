@@ -1,11 +1,17 @@
-export function makeZoneId(name: string): string {
-  const base = name
+export function slugifyName(name: string): string {
+  return name
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_") // non-alphanumerics -> _
-    .replace(/^_+|_+$/g, ""); // trim underscores
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
-  if (!base) return "";
-  // ensure it starts with "zone_" (e.g. "Zone 3" -> "zone_3")
-  return base.startsWith("zone_") ? base : `zone_${base}`;
+export function makeZoneId(name: string): string {
+  const s = slugifyName(name);
+  return s ? `zone_${s}` : "";
+}
+
+export function makeCategoryId(name: string): string {
+  const s = slugifyName(name);
+  return s ? `cat_${s}` : "";
 }
