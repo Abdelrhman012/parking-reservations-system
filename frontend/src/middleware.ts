@@ -10,16 +10,13 @@ type Rule = {
   loginFallback?: boolean; // if true and no token => redirect to /login
 };
 
-// ضيف/عدّل القواعد زي ما تحب
 const rules: Rule[] = [
   { pattern: /^\/admin(\/.*)?$/, allow: ["admin"], loginFallback: true },
   {
     pattern: /^\/checkpoint(\/.*)?$/,
-    allow: [ "employee"],
+    allow: ["employee"],
     loginFallback: true,
   },
-  // مثال لو عايز تحمي الجيت:
-  // { pattern: /^\/gate(\/.*)?$/, allow: ["employee", "admin"], loginFallback: false },
 ];
 
 export function middleware(req: NextRequest) {
@@ -29,14 +26,14 @@ export function middleware(req: NextRequest) {
 
   if (pathname === "/login" && token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/checkpoint";
+    url.pathname = role === "admin" ? "/admin" : "/checkpoint";
     return NextResponse.redirect(url);
   }
 
   const matched = rules.find((r) => r.pattern.test(pathname));
   if (!matched) return NextResponse.next();
 
-// if no token
+  // if no token
   if (!token) {
     if (matched.loginFallback) {
       const url = req.nextUrl.clone();
@@ -63,9 +60,5 @@ export function middleware(req: NextRequest) {
 
 // Specify the paths that will be protected by this middleware
 export const config = {
-  matcher: [
-    "/login",
-    "/checkpoint",
-    "/admin/:path*",
-  ],
+  matcher: ["/login", "/checkpoint", "/admin/:path*"],
 };

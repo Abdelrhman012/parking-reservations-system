@@ -8,10 +8,14 @@ export function slugifyName(name: string): string {
 
 export function makeZoneId(name: string): string {
   const s = slugifyName(name);
-  return s ? `zone_${s}` : "";
+  if (!s) return "";
+  if (s === "zone" || s.startsWith("zone")) return s;
+  return `zone_${s}`;
 }
 
 export function makeCategoryId(name: string): string {
   const s = slugifyName(name);
-  return s ? `cat_${s}` : "";
+  if (!s) return "";
+  if (s === "cat" || s.startsWith("cat")) return s;
+  return `cat_${s}`;
 }

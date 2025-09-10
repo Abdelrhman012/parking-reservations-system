@@ -19,7 +19,6 @@ export default function LoginPage() {
     const [loading, setLoading] = useState<boolean>(false);
 
     const sp = useSearchParams();
-    const next = sp.get("next") ?? "/checkpoint";
     const router = useRouter();
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,7 +28,7 @@ export default function LoginPage() {
             const res = await Auth.login({ username, password }); // typed LoginResponse
             setSession(res.token, res.user);
             toast("Logged in successfully", "success");
-            router.replace(next ?? res.user.role === "admin" ? "/admin" : "/checkpoint");
+            router.replace( res.user.role === "admin" ? "/admin" : "/checkpoint");
         } catch (err: unknown) {
             toast(getErrorMessage(err), "error");
         } finally {
@@ -38,7 +37,7 @@ export default function LoginPage() {
     }
 
     return (
-        <main className="w-screen h-screen flex justify-center items-center bg-gray-900">
+        <main className="w-screen h-screen flex justify-center items-center bg-gray-100">
             <div className="mx-auto  max-w-md rounded-xl  text-black bg-white p-8 text-center shadow-sm">
                 <h1 className="mb-4 text-lg font-semibold">Login</h1>
                 <form className="space-y-3" onSubmit={onSubmit}>

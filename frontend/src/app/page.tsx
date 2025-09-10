@@ -1,9 +1,6 @@
-import React from 'react'
+// app/page.tsx
+import { redirect } from "next/navigation";
 
-const page = () => {
-  return (
-    <div className='w-screen h-screen flex justify-center items-center'>Parking Reservation System</div>
-  )
+export default function Page() {
+  redirect("/gate/gate_1");
 }
-
-export default page

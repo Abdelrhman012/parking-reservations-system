@@ -6,6 +6,7 @@ type Zone = ApiZone & { specialActive?: boolean };
 
 type Props = {
     zone: Zone;
+    special:boolean;
     disabled?: boolean;
     onCheckin?: (zoneId: string) => void;
     mode?: "visitor" | "subscriber";
@@ -14,15 +15,15 @@ type Props = {
 
 export default function ZoneCard({
     zone,
+    special,
     onCheckin,
     disabled,
     mode
 }: Props) {
     const isOpen = zone.open;
-    const isRush = zone.specialActive === true;
     const total = zone.totalSlots;
     const available = mode === "subscriber" ? zone.availableForSubscribers : zone.availableForVisitors;
-    const price = isRush && zone.rateSpecial ? zone.rateSpecial : zone.rateNormal;
+    const price = special && zone.rateSpecial ? zone.rateSpecial : zone.rateNormal;
 
     const pillBg =
         CATEGORY_COLORS[(zone.categoryId as CategoryId)] ?? "bg-gray-900";;
@@ -59,7 +60,7 @@ export default function ZoneCard({
                     </div>
 
                     <div className="text-right">
-                        {isRush ? (
+                        {special ? (
                             <div className="mb-1 flex items-center justify-end gap-1 text-[10px] font-semibold text-amber-600">
                                 <svg viewBox="0 0 24 24" className="h-3 w-3" aria-hidden="true">
                                     <path d="M7 14l5-5 5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
