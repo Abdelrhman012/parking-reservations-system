@@ -29,7 +29,7 @@ export default function LoginPage() {
             const res = await Auth.login({ username, password }); // typed LoginResponse
             setSession(res.token, res.user);
             toast("Logged in successfully", "success");
-            router.replace(next);
+            router.replace(next ?? res.user.role === "admin" ? "/admin" : "/checkpoint");
         } catch (err: unknown) {
             toast(getErrorMessage(err), "error");
         } finally {
