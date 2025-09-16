@@ -35,7 +35,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:3000/api/v1/ws
 
 ![Main Page](image.png)
 
-- You Can vhange the gate through the url
+- You Can change the gate through the url
 - You Can Navigate to Admin / Employee Pages by Clicking Login and and login with the users in the seed
 
 ---
@@ -91,7 +91,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:3000/api/v1/ws
 
 ## Tech Stack
 
-- **Framework:** Next.js 14+, React 18, TypeScript
+- **Framework:** Next.js 14+, TypeScript
 - **Data:** @tanstack/react-query
 - **State (light):** Zustand (e.g., WS status, UI state)
 - **Styling:** Tailwind CSS
